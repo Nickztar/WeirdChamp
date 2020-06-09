@@ -1,10 +1,13 @@
 const { Client } = require('discord.js');
 require('dotenv').config();
 const client = new Client();
+const path = require('path');
+
 const fileMap = new Map();
-fileMap.set(0, 'C:\\Users\\Nicke\\Documents\\WeirdchampBot\\JoinSounds\\fagJoined.mp3');
-fileMap.set(1, 'C:\\Users\\Nicke\\Documents\\WeirdchampBot\\JoinSounds\\FandD.mp3');
-fileMap.set(2, 'C:\\Users\\Nicke\\Documents\\WeirdchampBot\\JoinSounds\\KEKW.mp3');
+
+fileMap.set(0, path.join(__dirname, '/JoinSounds/fagJoined.mp3'));
+fileMap.set(1, path.join(__dirname, '/JoinSounds/FandD.mp3'));
+fileMap.set(2, path.join(__dirname, '/JoinSounds/KEKW.mp3'));
 
 let isReady = true;
 let weirdchampStatus = true;
