@@ -1,4 +1,6 @@
-const { Client } = require('discord.js');
+const {
+  Client
+} = require('discord.js');
 require('dotenv').config();
 const client = new Client();
 const path = require('path');
@@ -38,7 +40,7 @@ client.on('message', msg => {
       msg.react(weirdchamp);
     }
   }
-  console.log(`${msg.member.nickname}: ${msg.content}`)
+  // console.log(`${msg.member.nickname}: ${msg.content}`)
 });
 
 client.on('messageReactionAdd', msgRect => {
@@ -58,16 +60,16 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         const connection = await newUserChannel.join();
         const randNummer = getRandomInt(fileMap.size);
         const dispatcher = connection.play(fileMap.get(randNummer), {
-            volume: 0.2,
+          volume: 0.2,
 
-          })
-          .on("finish", () => {
-            console.log("Finished playing")
-            newUserChannel.leave()
-            isReady = false;
-            setTimeout(() => isReady = true, 2000);
-          })
-          .on("error", error => console.error(error));
+        })
+        dispatcher.on("finish", () => {
+          console.log("Finished playing")
+          newUserChannel.leave()
+          isReady = false;
+          setTimeout(() => isReady = true, 2000);
+        })
+        dispatcher.on("error", error => console.error(error));
       }
     }
   }
