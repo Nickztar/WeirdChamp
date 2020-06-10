@@ -38,16 +38,6 @@ client.on('ready', () => {
 client.on('message', msg => {
   if (msg.author.bot) return;
 
-  if (msg.content === '!weirdchamp') {
-    msg.reply('https://tenor.com/view/weird-champ-weird-champ-pogchamp-pog-gif-13780848');
-  }
-  if (msg.content === '!togglewc') {
-    weirdchampStatus = !weirdchampStatus;
-    msg.reply(weirdchampStatus ? `\nWeirdchamp enabled <:weird:668843974504742912>` : `\nWeirdchamp disabled ❌`);
-  }
-  if (msg.content === '!goodbot') {
-    msg.reply('Thank you sir!');
-  }
   if (msg.content === '<:weird:668843974504742912>') {
     msg.reply('https://tenor.com/view/weird-champ-weird-champ-pogchamp-pog-gif-13780848');
   }
@@ -58,6 +48,7 @@ client.on('message', msg => {
     }
   }
 
+  //Commands below
   if (!msg.content.startsWith(prefix)) return;
 
   const serverQueue = queue.get(msg.guild.id);
@@ -71,6 +62,15 @@ client.on('message', msg => {
   } else if (msg.content.startsWith(`${prefix}stop`)) {
     stop(msg, serverQueue);
     return;
+  } else if (msg.content.startsWith(`${prefix}weirdchamp`)) {
+    msg.reply('https://tenor.com/view/weird-champ-weird-champ-pogchamp-pog-gif-13780848');
+  } else if (msg.content.startsWith(`${prefix}togglewc`)) {
+    weirdchampStatus = !weirdchampStatus;
+    msg.reply(weirdchampStatus ? `\nWeirdchamp enabled <:weird:668843974504742912>` : `\nWeirdchamp disabled ❌`);
+  } else if (msg.content.startsWith(`${prefix}goodbot`)) {
+    msg.reply('Thank you sir! <:Happy:711247709729718312>');
+  } else if (msg.content.startsWith(`${prefix}commands`)) {
+    msg.reply('All my commands are listed here: https://github.com/Nickztar/WeirdChamp/blob/master/readme.md');
   } else {
     msg.channel.send("Not a valid command! <:weird:668843974504742912>");
   }
@@ -129,7 +129,7 @@ async function execute(message, serverQueue) {
       "No permission <:weird:668843974504742912>"
     );
   }
-  if (!args[1].match(regYoutube)){
+  if (!args[1].match(regYoutube)) {
     return message.channel.send(
       "This is not valid fucking youtube link! <:weird:668843974504742912>"
     );
@@ -184,10 +184,10 @@ function stop(message, serverQueue) {
     return message.channel.send(
       "Join a voice channel to stop the music! <:pepega:709781824771063879>"
     );
-    if (!serverQueue)
-      return message.channel.send(
-        "Something went fucking wrong! <:pepelaugh:699711830523773040>"
-      );
+  if (!serverQueue)
+    return message.channel.send(
+      "Something went fucking wrong! <:pepelaugh:699711830523773040>"
+    );
   serverQueue.songs = [];
   serverQueue.connection.dispatcher.end();
 }
@@ -199,7 +199,7 @@ function play(guild, song) {
     queue.delete(guild.id);
     return;
   }
-  if (song.url == null){
+  if (song.url == null) {
     serverQueue.voiceChannel.leave();
     queue.delete(guild.id);
     return;
@@ -212,14 +212,14 @@ function play(guild, song) {
   }
 
   const dispatcher = serverQueue.connection
-      .play(ytdl(song.url))
-      .on("finish", () => {
-        serverQueue.songs.shift();
-        play(guild, serverQueue.songs[0]);
-      })
-      .on("error", error => console.error(error));
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(`Start playing: **${song.title}** <:pog:710437255231176764>`);
+    .play(ytdl(song.url))
+    .on("finish", () => {
+      serverQueue.songs.shift();
+      play(guild, serverQueue.songs[0]);
+    })
+    .on("error", error => console.error(error));
+  dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+  serverQueue.textChannel.send(`Start playing: **${song.title}** <:pog:710437255231176764>`);
 }
 
 //Utility functions
