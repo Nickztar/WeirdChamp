@@ -54,13 +54,13 @@ client.on('messageReactionAdd', msgRect => {
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
   let newUserChannel = newMember.channel;
   let oldUserChannel = oldMember.channel;
-  if (newMember.id != 708326969460392037 && isReady) {
+  if (newMember.id != process.env.CLIENT_ID && isReady) {
     if (newUserChannel !== null) {
       if (oldUserChannel != newUserChannel) {
         const connection = await newUserChannel.join();
         const randNummer = getRandomInt(fileMap.size);
         const dispatcher = connection.play(fileMap.get(randNummer), {
-          volume: 0.2,
+          volume: 0.5,
 
         })
         console.log(fileMap.get(randNummer))
