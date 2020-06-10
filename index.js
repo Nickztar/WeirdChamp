@@ -26,7 +26,7 @@ let weirdchampStatus = true;
 
 //When user is ready
 client.on('ready', () => {
-  client.user.setActivity('!weirdchamp')
+  client.user.setActivity('+weirdchamp')
     .then(presence => console.log(`Activity set to ${presence.activities[0].name}`))
     .catch(console.error);
   console.log(`Logged in as ${client.user.tag}!`);
