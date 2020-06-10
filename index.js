@@ -9,7 +9,7 @@ const path = require('path');
 const queue = new Map();
 
 //Statics
-const prefix = '!';
+const prefix = '+';
 const regYoutube = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
 //Sound files
@@ -176,6 +176,9 @@ function skip(message, serverQueue) {
     );
   if (!serverQueue)
     return message.channel.send("No song to skip! <:pepega:709781824771063879>");
+  if (!serverQueue.connection.dispatcher) {
+    return;
+  }
   serverQueue.connection.dispatcher.end();
 }
 
