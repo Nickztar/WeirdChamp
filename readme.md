@@ -47,6 +47,7 @@ nodemon index.js
 5. +togglewc - Toggles the reacting weirdchamp
 6. +goodbot - Thanks you <3
 7. +commands - Lists you all the commands
+8. +random - Plays a random sound from JoinSounds
 
 ## Note
 

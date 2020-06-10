@@ -35,7 +35,7 @@ client.on('ready', () => {
 
 //Various on message commands.
 
-client.on('message', msg => {
+client.on('message', async msg => {
   if (msg.author.bot) return;
 
   if (msg.content === '<:weird:668843974504742912>') {
@@ -71,6 +71,19 @@ client.on('message', msg => {
     msg.reply('Thank you sir! <:Happy:711247709729718312>');
   } else if (msg.content.startsWith(`${prefix}commands`)) {
     msg.reply('All my commands are listed here: https://github.com/Nickztar/WeirdChamp/blob/master/readme.md');
+  } else if (msg.content.startsWith(`${prefix}random`)) {
+    const voiceChannel = msg.member.voice.channel;
+    if (!voiceChannel)
+      return msg.channel.send(
+        "You're not in a voice channel! <:weird:668843974504742912>"
+      );
+    const permissions = voiceChannel.permissionsFor(msg.client.user);
+    if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
+      return msg.channel.send(
+        "No permission <:weird:668843974504742912>"
+      );
+    }
+    await playRandom(voiceChannel);
   } else {
     msg.channel.send("Not a valid command! <:weird:668843974504742912>");
   }
@@ -92,20 +105,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
   if (newMember.id != process.env.CLIENT_ID && isReady) {
     if (newUserChannel !== null) {
       if (oldUserChannel != newUserChannel) {
-        const connection = await newUserChannel.join();
-        const randNummer = getRandomInt(fileMap.size);
-        const dispatcher = connection.play(fileMap.get(randNummer), {
-          volume: 0.5,
-
-        })
-        console.log(fileMap.get(randNummer))
-        dispatcher.on("finish", () => {
-          console.log("Finished playing")
-          newUserChannel.leave()
-          isReady = false;
-          setTimeout(() => isReady = true, 2000);
-        })
-        dispatcher.on("error", error => console.error(error));
+        await playRandom(newUserChannel)
       }
     }
   }
@@ -225,6 +225,22 @@ function play(guild, song) {
   serverQueue.textChannel.send(`Start playing: **${song.title}** <:pog:710437255231176764>`);
 }
 
+async function playRandom(channel) {
+  const connection = await channel.join();
+  const randNummer = getRandomInt(fileMap.size);
+  const dispatcher = connection.play(fileMap.get(randNummer), {
+    volume: 0.5,
+
+  })
+  console.log(fileMap.get(randNummer))
+  dispatcher.on("finish", () => {
+    console.log("Finished playing")
+    channel.leave()
+    isReady = false;
+    setTimeout(() => isReady = true, 2000);
+  })
+  dispatcher.on("error", error => console.error(error));
+}
 //Utility functions
 function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
