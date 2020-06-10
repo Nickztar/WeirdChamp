@@ -3,13 +3,14 @@ const {
 } = require('discord.js');
 require('dotenv').config();
 const client = new Client();
-const path = require('path');
+const fs = require('fs');
 
 const fileMap = new Map();
-
-fileMap.set(0, path.join(__dirname, '/JoinSounds/fagJoined.mp3'));
-fileMap.set(1, path.join(__dirname, '/JoinSounds/FandD.mp3'));
-fileMap.set(2, path.join(__dirname, '/JoinSounds/KEKW.mp3'));
+const files = fs.readdirSync('JoinSounds');
+files.forEach((file, index) => {
+  const fileName = "/JoinSounds/"+file;
+  fileMap.set(index, fileName);
+})
 
 let isReady = true;
 let weirdchampStatus = true;
