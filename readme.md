@@ -1,6 +1,6 @@
 # WeirdChamp
 ## A DiscordJS bot made for my server trolling and enjoyment.
-![WeirdChamp blinking](/Extra/PauseChamp.png)
+![PauseChamp](/Extra/PauseChamp.png)
 
 ## Setup
 
@@ -9,7 +9,7 @@
 * Setup a nice name and add picture. Check out [Extra map](/Extra) for some good ones.
 * Download, fork or pull the repo.
 
-![WeirdChamp](/Extra/Weirdchamp.png)
+![WeirdChamp](/Extra/WeirdChamp.png)
 
 ## Installation
 
@@ -33,4 +33,4 @@ npm run bot
 
 Some things are hardcoded for my ease and this was all made as some kind of joke. Just look through the code and replace what seems to be the issue. Will improve on it when I feel like it. 
 
-![WeirdChamp blinking](/Extra/WeirdChamp.gif)
+![WeirdChamp blinking](/Extra/WeirdChampBlink.gif)
