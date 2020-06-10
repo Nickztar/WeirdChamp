@@ -4,11 +4,11 @@ const {
 require('dotenv').config();
 const client = new Client();
 const fs = require('fs');
-
+const path = require('path');
 const fileMap = new Map();
 const files = fs.readdirSync('JoinSounds');
 files.forEach((file, index) => {
-  const fileName = "/JoinSounds/"+file;
+  const fileName = path.join('Joinsounds', file);
   fileMap.set(index, fileName);
 })
 
@@ -41,7 +41,6 @@ client.on('message', msg => {
       msg.react(weirdchamp);
     }
   }
-  // console.log(`${msg.member.nickname}: ${msg.content}`)
 });
 
 client.on('messageReactionAdd', msgRect => {
@@ -64,6 +63,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
           volume: 0.2,
 
         })
+        console.log(fileMap.get(randNummer))
         dispatcher.on("finish", () => {
           console.log("Finished playing")
           newUserChannel.leave()
