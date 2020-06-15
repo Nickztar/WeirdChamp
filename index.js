@@ -279,12 +279,6 @@ function play(guild, song) {
 		return;
 	}
 
-	// if (!song.url.match(regYoutube)) {
-	//   serverQueue.voiceChannel.leave();
-	//   queue.delete(guild.id);
-	//   return;
-	// }
-
 	const dispatcher = serverQueue.connection
 		.play(ytdl(song.url))
 		.on("finish", () => {
