@@ -48,6 +48,8 @@ nodemon index.js
 6. +goodbot - Thanks you <3
 7. +commands - Lists you all the commands
 8. +random - Plays a random sound from JoinSounds
+9. +random {NAME} - Plays a specific random from JoinSounds
+10. +songs - Lists all songs available in JoinSounds.
 
 ## Note
 
