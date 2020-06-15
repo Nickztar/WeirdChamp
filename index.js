@@ -212,7 +212,7 @@ async function execute(message, serverQueue, find) {
 			voiceChannel: voiceChannel,
 			connection: null,
 			songs: [],
-			volume: 5,
+			volume: 2,
 			playing: true,
 		};
 
