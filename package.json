@@ -13,6 +13,7 @@
     "dotenv": "^8.2.0",
     "nodemon": "^2.0.3",
     "opusscript": "0.0.7",
+    "yt-search": "^1.1.2",
     "ytdl-core": "^2.1.7"
   }
 }
