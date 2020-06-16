@@ -17,7 +17,7 @@ const fileSet = new Map();
 const files = fs.readdirSync("JoinSounds");
 files.forEach((file, index) => {
 	const fileName = path.join("Joinsounds", file);
-	fileSet.set(file.replace(".mp3", ""), fileName);
+	fileSet.set(file.replace(".mp3", "").toLowerCase(), fileName);
 	fileMap.set(index, fileName);
 });
 
@@ -113,10 +113,11 @@ client.on("message", async (msg) => {
 			return msg.channel.send("No permission <:weird:668843974504742912>");
 		}
 		if (fileSet.has(args[1])) {
-			await playFromRandom(voiceChannel, args[1]);
+			await playFromRandom(voiceChannel, args[1].toLowerCase());
 			return;
+		} else {
+			await playRandom(voiceChannel);
 		}
-		await playRandom(voiceChannel);
 	} else {
 		msg.channel.send("Not a valid command! <:weird:668843974504742912>");
 		return;
