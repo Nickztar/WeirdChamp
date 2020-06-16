@@ -1,4 +1,6 @@
-const { Client } = require("discord.js");
+const {
+	Client
+} = require("discord.js");
 const yts = require("yt-search");
 const ytdl = require("ytdl-core");
 require("dotenv").config();
@@ -16,7 +18,7 @@ const fileMap = new Map();
 const fileSet = new Map();
 const files = fs.readdirSync("JoinSounds");
 files.forEach((file, index) => {
-	const fileName = path.join("Joinsounds", file);
+	const fileName = path.join("App/Joinsounds", file);
 	fileSet.set(file.replace(".mp3", "").toLowerCase(), fileName);
 	fileMap.set(index, fileName);
 });
@@ -80,9 +82,9 @@ client.on("message", async (msg) => {
 	} else if (msg.content.startsWith(`${prefix}togglewc`)) {
 		weirdchampStatus = !weirdchampStatus;
 		msg.reply(
-			weirdchampStatus
-				? `\nWeirdchamp enabled <:weird:668843974504742912>`
-				: `\nWeirdchamp disabled ❌`
+			weirdchampStatus ?
+			`\nWeirdchamp enabled <:weird:668843974504742912>` :
+			`\nWeirdchamp disabled ❌`
 		);
 		return;
 	} else if (msg.content.startsWith(`${prefix}goodbot`)) {
