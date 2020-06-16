@@ -1,4 +1,6 @@
-const { Client } = require("discord.js");
+const {
+	Client
+} = require("discord.js");
 const yts = require("yt-search");
 const ytdl = require("ytdl-core");
 require("dotenv").config();
@@ -80,16 +82,16 @@ client.on("message", async (msg) => {
 	} else if (msg.content.startsWith(`${prefix}togglewc`)) {
 		weirdchampStatus = !weirdchampStatus;
 		msg.reply(
-			weirdchampStatus
-				? `\nWeirdchamp enabled <:weird:668843974504742912>`
-				: `\nWeirdchamp disabled ❌`
+			weirdchampStatus ?
+			`\nWeirdchamp enabled <:weird:668843974504742912>` :
+			`\nWeirdchamp disabled ❌`
 		);
 		return;
 	} else if (msg.content.startsWith(`${prefix}goodbot`)) {
 		msg.reply("Thank you sir! <:Happy:711247709729718312>");
 		return;
 	} else if (msg.content.startsWith(`${prefix}songs`)) {
-		var string = "**Songs: ** ```";
+		var string = '**Songs: ' + `(${fileSet.size})**` + '```';
 		fileSet.forEach((value, key, map) => {
 			string += `${key}\n`;
 		});
@@ -127,6 +129,7 @@ client.on("message", async (msg) => {
 //React to someone reacting with :Pet:
 client.on("messageReactionAdd", async (msgRect) => {
 	if (weirdchampStatus) {
+		if (msgRect.me) return;
 		if (msgRect.emoji.name == "pet") {
 			msgRect.message.reply("<:KEKW:652170559047598081>");
 		}
@@ -303,9 +306,7 @@ async function playRandom(channel) {
 			const dispatcher = connection.play(filePath, {
 				volume: 0.5,
 			});
-			console.log({
-				filePath,
-			});
+			console.log("random:" + filePath);
 			dispatcher.on("finish", () => {
 				console.log("Finished playing");
 				channel.leave();
@@ -327,9 +328,7 @@ async function playFromRandom(channel, song) {
 			const dispatcher = connection.play(filePath, {
 				volume: 0.5,
 			});
-			console.log({
-				filePath,
-			});
+			console.log("selected:" + filePath);
 			dispatcher.on("finish", () => {
 				console.log("Finished playing");
 				channel.leave();
