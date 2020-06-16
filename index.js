@@ -306,6 +306,7 @@ async function playRandom(channel) {
 			const dispatcher = connection.play(filePath, {
 				volume: 0.5,
 			});
+			console.log("Dispatcher: " + dispatcher);
 			console.log("random:" + filePath);
 			dispatcher.on("finish", () => {
 				console.log("Finished playing");
