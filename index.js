@@ -1,6 +1,4 @@
-const {
-	Client
-} = require("discord.js");
+const { Client } = require("discord.js");
 const yts = require("yt-search");
 const ytdl = require("ytdl-core");
 require("dotenv").config();
@@ -82,16 +80,16 @@ client.on("message", async (msg) => {
 	} else if (msg.content.startsWith(`${prefix}togglewc`)) {
 		weirdchampStatus = !weirdchampStatus;
 		msg.reply(
-			weirdchampStatus ?
-			`\nWeirdchamp enabled <:weird:668843974504742912>` :
-			`\nWeirdchamp disabled ❌`
+			weirdchampStatus
+				? `\nWeirdchamp enabled <:weird:668843974504742912>`
+				: `\nWeirdchamp disabled ❌`
 		);
 		return;
 	} else if (msg.content.startsWith(`${prefix}goodbot`)) {
 		msg.reply("Thank you sir! <:Happy:711247709729718312>");
 		return;
 	} else if (msg.content.startsWith(`${prefix}songs`)) {
-		var string = '**Songs: ' + `(${fileSet.size})**` + '```';
+		var string = "**Songs: " + `(${fileSet.size})**` + "```";
 		fileSet.forEach((value, key, map) => {
 			string += `${key}\n`;
 		});
@@ -313,9 +311,9 @@ async function playRandom(channel) {
 				setTimeout(() => (isReady = true), 2000);
 			});
 			dispatcher.on("error", (error) => console.error(error));
-		} catch {
+		} catch (err) {
 			isReady = true;
-			console.log("Something went wrong");
+			console.log("Something went wrong Ex:" + err);
 		}
 	}
 }
@@ -335,9 +333,9 @@ async function playFromRandom(channel, song) {
 				setTimeout(() => (isReady = true), 2000);
 			});
 			dispatcher.on("error", (error) => console.error(error));
-		} catch {
+		} catch (err) {
 			isReady = true;
-			console.log("Something went wrong");
+			console.log("Something went wrong Ex: " + err);
 		}
 	}
 }
