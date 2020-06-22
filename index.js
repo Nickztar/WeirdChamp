@@ -16,7 +16,7 @@ const fileMap = new Map();
 const fileSet = new Map();
 const files = fs.readdirSync("JoinSounds");
 files.forEach((file, index) => {
-	const fileName = path.join(__dirname, path.join("Joinsounds", file));
+	const fileName = path.join(__dirname, path.join("JoinSounds", file));
 	fileSet.set(file.replace(".mp3", "").toLowerCase(), fileName);
 	fileMap.set(index, fileName);
 });
