@@ -1,6 +1,4 @@
-const {
-	Client
-} = require("discord.js");
+const { Client } = require("discord.js");
 const yts = require("yt-search");
 const ytdl = require("ytdl-core");
 require("dotenv").config();
@@ -82,9 +80,9 @@ client.on("message", async (msg) => {
 	} else if (msg.content.startsWith(`${prefix}togglewc`)) {
 		weirdchampStatus = !weirdchampStatus;
 		msg.reply(
-			weirdchampStatus ?
-			`\nWeirdchamp enabled <:weird:668843974504742912>` :
-			`\nWeirdchamp disabled ❌`
+			weirdchampStatus
+				? `\nWeirdchamp enabled <:weird:668843974504742912>`
+				: `\nWeirdchamp disabled ❌`
 		);
 		return;
 	} else if (msg.content.startsWith(`${prefix}goodbot`)) {
@@ -306,7 +304,6 @@ async function playRandom(channel) {
 			const dispatcher = connection.play(filePath, {
 				volume: 0.5,
 			});
-			console.log("Dispatcher: " + dispatcher);
 			console.log("random:" + filePath);
 			dispatcher.on("finish", () => {
 				console.log("Finished playing");
