@@ -1,20 +1,21 @@
 {
-  "name": "weirdchampbot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "bot": "node index.js"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "discord.js": "^12.2.0",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "nodemon": "^2.0.4",
-    "opusscript": "0.0.7",
-    "yt-search": "^1.1.2",
-    "ytdl-core": "^2.1.7"
-  }
+	"name": "weirdchampbot",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"bot": "node index.js",
+		"prod": "nodemon -x 'node index.js || (sleep 10; touch index.js)"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"discord.js": "^12.2.0",
+		"dotenv": "^8.2.0",
+		"express": "^4.17.1",
+		"nodemon": "^2.0.4",
+		"opusscript": "0.0.7",
+		"yt-search": "^1.1.2",
+		"ytdl-core": "^2.1.7"
+	}
 }
