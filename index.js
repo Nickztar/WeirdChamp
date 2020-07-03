@@ -34,7 +34,7 @@ app.get("/random/:id", async (req, res) => {
 	res.send(true);
 });
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 8080;
 
 app.listen(port, console.log("API running" + port));
 client.login(process.env.DISCORD_KEY);
