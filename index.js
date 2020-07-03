@@ -1,7 +1,9 @@
 const { Client } = require("discord.js");
 const yts = require("yt-search");
 const ytdl = require("ytdl-core");
+const express = require("express");
 require("dotenv").config();
+const app = express();
 const client = new Client();
 const fs = require("fs");
 const path = require("path");
@@ -24,6 +26,18 @@ files.forEach((file, index) => {
 //States
 let isReady = true;
 let weirdchampStatus = true;
+
+app.get("/random/:id", async (req, res) => {
+	const { id } = req.params;
+	const channel = await client.channels.fetch(id);
+	await playRandom(channel);
+	res.send(true);
+});
+
+const port = process.env.PORT || 4000;
+
+app.listen(port, console.log("API running"));
+client.login(process.env.DISCORD_KEY);
 
 //When user is ready
 client.on("ready", () => {
@@ -166,7 +180,6 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
 });
 
 //Client login
-client.login(process.env.DISCORD_KEY);
 
 //Youtube functions
 async function execute(message, serverQueue, find) {
