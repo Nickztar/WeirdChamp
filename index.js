@@ -36,7 +36,7 @@ app.get("/random/:id", async (req, res) => {
 
 const port = process.env.PORT || 4000;
 
-app.listen(port, console.log("API running"));
+app.listen(port, console.log("API running" + port));
 client.login(process.env.DISCORD_KEY);
 
 //When user is ready
