@@ -27,11 +27,15 @@ files.forEach((file, index) => {
 let isReady = true;
 let weirdchampStatus = true;
 
-app.get("/random/:id", async (req, res) => {
+app.get("/api/random/:id", async (req, res) => {
 	const { id } = req.params;
 	const channel = await client.channels.fetch(id);
 	await playRandom(channel);
 	res.send(true);
+});
+
+app.get("/api/files", async (req, res) => {
+	res.send([...fileSet.keys()]);
 });
 
 const port = process.env.PORT || 8080;
