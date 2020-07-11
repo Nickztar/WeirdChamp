@@ -2,13 +2,32 @@ const { Client } = require("discord.js");
 const yts = require("yt-search");
 const ytdl = require("ytdl-core");
 const express = require("express");
+const cors = require("cors");
 require("dotenv").config();
 const app = express();
+
 const client = new Client();
 const fs = require("fs");
 const path = require("path");
 const queue = new Map();
 
+var whitelist = [
+	"https://Weirdchamp.wtf",
+	"https://www.Weirdchamp.wtf",
+	"https://weirdchamp.vercel.app/",
+	"https://www.weirdchamp.vercel.app/",
+];
+var corsOptions = {
+	origin: function (origin, callback) {
+		if (whitelist.indexOf(origin) !== -1) {
+			callback(null, true);
+		} else {
+			callback(new Error("Not allowed by CORS"));
+		}
+	},
+};
+
+app.use(cors(corsOptions));
 //Statics
 const prefix = "+";
 const regYoutube = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
@@ -38,7 +57,7 @@ app.get("/api/files", async (req, res) => {
 	res.send([...fileSet.keys()]);
 });
 
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3030;
 
 app.listen(port, console.log("API running" + port));
 client.login(process.env.DISCORD_KEY);
