@@ -57,6 +57,16 @@ app.get("/api/files", async (req, res) => {
 	res.send([...fileSet.keys()]);
 });
 
+app.get("/api/bot/guilds", async (req, res) => {
+	res.send(client.guilds);
+});
+
+app.get("/api/bot/channels/:guildId", async (req, res) => {
+	const { guildId } = req.params;
+	const guild = client.guilds.cache.find((x) => x.id == guildId);
+	res.send(guild.channels);
+});
+
 const port = process.env.PORT || 3030;
 
 app.listen(port, console.log("API running" + port));
