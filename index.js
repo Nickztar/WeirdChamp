@@ -12,8 +12,8 @@ const path = require("path");
 const queue = new Map();
 
 var whitelist = [
-	"https://Weirdchamp.wtf",
-	"https://www.Weirdchamp.wtf",
+	"https://app.weirdchamp.wtf",
+	"https://www.app.Weirdchamp.wtf",
 	"https://weirdchamp.vercel.app/",
 	"https://www.weirdchamp.vercel.app/",
 ];
