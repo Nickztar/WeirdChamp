@@ -59,6 +59,10 @@ app.get("/api/files", async (req, res) => {
 });
 
 app.get("/api/bot/guilds", async (req, res) => {
+    //Auth user from firebase (?)
+    //Get all guilds
+    //Get the guilds where guilds.members.contains(user.DiscordID)
+    //Return those guilds
     res.send(client.guilds.cache);
 });
 
