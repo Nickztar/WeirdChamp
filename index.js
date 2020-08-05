@@ -30,7 +30,7 @@ var corsOptions = {
 //app.use(cors(corsOptions));
 app.use(cors());
 //Statics
-const prefix = "+";
+const prefix = "!";
 const regYoutube = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
 //Sound files
