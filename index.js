@@ -359,7 +359,7 @@ async function playRandom(channel) {
             const dispatcher = connection.play(filePath, {
                 volume: 0.5,
             });
-            console.log("random:" + filePath);
+            console.log(`${Date.now()} random:` + filePath);
             dispatcher.on("finish", () => {
                 console.log("Finished playing");
                 channel.leave();
@@ -381,7 +381,7 @@ async function playFromRandom(channel, song) {
             const dispatcher = connection.play(filePath, {
                 volume: 0.5,
             });
-            console.log("selected:" + filePath);
+            console.log(`${Date.now()} selected:` + filePath);
             dispatcher.on("finish", () => {
                 console.log("Finished playing");
                 channel.leave();
@@ -390,7 +390,7 @@ async function playFromRandom(channel, song) {
             dispatcher.on("error", (error) => console.error(error));
         } catch (err) {
             isReady = true;
-            console.log("Something went wrong Ex: " + err);
+            console.log(`${Date.now()} Something went wrong Ex: ` + err);
         }
     }
 }
