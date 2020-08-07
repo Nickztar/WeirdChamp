@@ -30,7 +30,7 @@ var corsOptions = {
 //app.use(cors(corsOptions));
 app.use(cors());
 //Statics
-const prefix = "!";
+const prefix = "!"; //Should be in DB probably, persist though restarts
 const regYoutube = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
 //Sound files
@@ -44,8 +44,8 @@ files.forEach((file, index) => {
 });
 
 //States
-let isReady = true;
-let weirdchampStatus = true;
+let isReady = true; //Not sure how this is supposed to work for multiple servers?
+let weirdchampStatus = true; //Should be in DB probably, persist though restarts
 
 app.get("/api/bot/random/:id", async (req, res) => {
     const { id } = req.params;
@@ -98,7 +98,8 @@ client.on("ready", () => {
 //Various on message commands.
 
 client.on("message", async (msg) => {
-    if (msg.author.bot) return;
+    if (msg.author.bot) return; //Stops replying to own commands
+    if (msg.channel.type !== "text") return; //Stops crash on PM
 
     if (msg.content === "<:weird:668843974504742912>") {
         msg.reply(
