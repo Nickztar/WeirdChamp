@@ -12,8 +12,9 @@ const path = require("path");
 const queue = new Map();
 
 var whitelist = [
-    "https://app.weirdchamp.wtf",
-    "https://www.app.Weirdchamp.wtf",
+    "https://weirdchamp.wtf",
+    "https://www.weirdchamp.wtf",
+    "https://dev.weirdchamp.wtf/",
     "https://weirdchamp.vercel.app/",
     "https://www.weirdchamp.vercel.app/",
 ];
@@ -27,8 +28,8 @@ var corsOptions = {
     },
 };
 
-//app.use(cors(corsOptions));
-app.use(cors());
+app.use(cors(corsOptions));
+// app.use(cors());
 //Statics
 const prefix = "!"; //Should be in DB probably, persist though restarts
 const regYoutube = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
