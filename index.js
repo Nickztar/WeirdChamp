@@ -14,9 +14,9 @@ const queue = new Map();
 var whitelist = [
     "https://weirdchamp.wtf",
     "https://www.weirdchamp.wtf",
-    "https://dev.weirdchamp.wtf/",
-    "https://weirdchamp.vercel.app/",
-    "https://www.weirdchamp.vercel.app/",
+    "https://dev.weirdchamp.wtf",
+    "https://weirdchamp.vercel.app",
+    "https://www.weirdchamp.vercel.app",
 ];
 var corsOptions = {
     origin: function (origin, callback) {
