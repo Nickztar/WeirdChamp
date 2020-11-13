@@ -247,12 +247,13 @@ async function execute(message, serverQueue, find) {
     }
     let song;
     if (find) {
-        const finds = await yts(args[1]);
+        const search = message.replace(`${prefix}search`, '');
+        const finds = await yts(search);
         const videos = finds.videos;
         const songInfo = videos[0];
         if (!songInfo) {
             return message.channel.send(
-                `Couldn't find ${args[1]} <:weird:668843974504742912>`
+                `Couldn't find ${search} <:weird:668843974504742912>`
             );
         }
         song = {
