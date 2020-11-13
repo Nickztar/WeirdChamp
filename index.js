@@ -247,7 +247,7 @@ async function execute(message, serverQueue, find) {
     }
     let song;
     if (find) {
-        const search = message.replace(`${prefix}search`, '');
+        const search = message.content.replace(`${prefix}search`, '');
         const finds = await yts(search);
         const videos = finds.videos;
         const songInfo = videos[0];
