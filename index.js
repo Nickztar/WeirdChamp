@@ -256,8 +256,8 @@ async function execute(message, serverQueue, find) {
             );
         }
         song = {
-            title: songInfo.title,
-            url: songInfo.url,
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
         };
     } else {
         if (!args[1].match(regYoutube)) {
@@ -267,8 +267,8 @@ async function execute(message, serverQueue, find) {
         }
         const songInfo = await ytdl.getInfo(args[1]);
         song = {
-            title: songInfo.title,
-            url: songInfo.video_url,
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
         };
     }
 
@@ -281,7 +281,6 @@ async function execute(message, serverQueue, find) {
             volume: 2,
             playing: true,
         };
-
         queue.set(message.guild.id, queueContruct);
 
         queueContruct.songs.push(song);
@@ -289,7 +288,6 @@ async function execute(message, serverQueue, find) {
         try {
             var connection = await voiceChannel.join();
             queueContruct.connection = connection;
-
             play(message.guild, queueContruct.songs[0]);
         } catch (err) {
             console.log(err);
