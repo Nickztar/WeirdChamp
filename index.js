@@ -333,6 +333,7 @@ function stop(message, serverQueue) {
 
 function play(guild, song) {
     const serverQueue = queue.get(guild.id);
+    isReady = false;
     if (!song) {
         serverQueue.voiceChannel.leave();
         queue.delete(guild.id);
@@ -348,9 +349,13 @@ function play(guild, song) {
         .play(ytdl(song.url))
         .on("finish", () => {
             serverQueue.songs.shift();
+            isReady = true;
             play(guild, serverQueue.songs[0]);
         })
-        .on("error", (error) => console.error(error));
+        .on("error", (error) => {
+            console.error(error)
+            isReady = true;
+        });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(
         `Start playing: **${song.title}** <:pog:710437255231176764>`
