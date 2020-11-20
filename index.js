@@ -337,11 +337,13 @@ function play(guild, song) {
     if (!song) {
         serverQueue.voiceChannel.leave();
         queue.delete(guild.id);
+        isReady = true;
         return;
     }
     if (song.url == null) {
         serverQueue.voiceChannel.leave();
         queue.delete(guild.id);
+        isReady = true;
         return;
     }
 
