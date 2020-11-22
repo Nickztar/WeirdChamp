@@ -5,12 +5,16 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const app = express();
+const aws = require("aws-sdk");
 
 const client = new Client();
-const fs = require("fs");
-const path = require("path");
 const queue = new Map();
-
+aws.config.update({
+    region: 'eu-north-1',
+    accessKeyId: process.env.S3_ID,
+    secretAccessKey: process.env.S3_KEY
+});
+const s3 = new aws.S3({apiVersion: '2006-03-01'});
 var whitelist = [
     "https://weirdchamp.wtf",
     "https://www.weirdchamp.wtf",
@@ -37,11 +41,13 @@ const regYoutube = /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/
 //Sound files
 const fileMap = new Map();
 const fileSet = new Map();
-const files = fs.readdirSync("JoinSounds");
-files.forEach((file, index) => {
-    const fileName = path.join(__dirname, path.join("JoinSounds", file));
-    fileSet.set(file.replace(".mp3", "").toLowerCase(), fileName);
-    fileMap.set(index, fileName);
+s3.listObjects({ Bucket: 'weirdchamp' }, function (err, data) {
+    if(err)throw err;
+    data.Contents.forEach(function(file, index){
+        var key = file.Key;
+        fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
+        fileMap.set(index, key);
+    })
 });
 
 //States
@@ -229,7 +235,6 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
 });
 
 //Client login
-
 //Youtube functions
 async function execute(message, serverQueue, find) {
     const args = message.content.split(" ");
@@ -370,11 +375,12 @@ async function playRandom(channel) {
             const connection = await channel.join();
             isReady = false;
             const randNummer = getRandomInt(fileMap.size);
-            var filePath = fileMap.get(randNummer);
-            const dispatcher = connection.play(filePath, {
+            var key = fileMap.get(randNummer);
+            const url = getS3Url(key)
+            const dispatcher = connection.play(url, {
                 volume: 0.5,
             });
-            console.log(`${Date.now()} random:` + filePath);
+            console.log(`${Date.now()} random:` + key);
             dispatcher.on("finish", () => {
                 console.log("Finished playing");
                 channel.leave();
@@ -392,11 +398,12 @@ async function playFromRandom(channel, song) {
         try {
             const connection = await channel.join();
             isReady = false;
-            var filePath = fileSet.get(song);
-            const dispatcher = connection.play(filePath, {
+            var key = fileSet.get(song);
+            const url = getS3Url(key)
+            const dispatcher = connection.play(url, {
                 volume: 0.5,
             });
-            console.log(`${Date.now()} selected:` + filePath);
+            console.log(`${Date.now()} selected:` + key);
             dispatcher.on("finish", () => {
                 console.log("Finished playing");
                 channel.leave();
@@ -408,6 +415,15 @@ async function playFromRandom(channel, song) {
             console.log(`${Date.now()} Something went wrong Ex: ` + err);
         }
     }
+}
+
+function getS3Url(key){
+    const url = s3.getSignedUrl('getObject', {
+        Bucket: 'weirdchamp',
+        Key: key,
+        Expires: 60
+    })
+    return url;
 }
 //Utility functions
 function getRandomInt(max) {
