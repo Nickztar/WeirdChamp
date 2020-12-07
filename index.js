@@ -94,7 +94,7 @@ client.login(process.env.DISCORD_KEY);
 //When user is ready
 client.on("ready", () => {
     client.user
-        .setActivity("+weirdchamp")
+        .setActivity(`${prefix}weirdchamp`)
         .then((presence) =>
             console.log(`Activity set to ${presence.activities[0].name}`)
         )
