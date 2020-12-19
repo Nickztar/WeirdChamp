@@ -107,7 +107,7 @@ client.on("ready", () => {
 client.on("message", async (msg) => {
     if (msg.author.bot) return; //Stops replying to own commands
     if (msg.channel.type !== "text") return; //Stops crash on PM
-
+    if (msg.channel.name == "kinda_cringe") return;
     if (msg.content === "<:weird:668843974504742912>") {
         msg.reply(
             "https://tenor.com/view/weird-champ-weird-champ-pogchamp-pog-gif-13780848"
