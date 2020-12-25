@@ -105,6 +105,7 @@ client.on("ready", () => {
 //Various on message commands.
 
 client.on("message", async (msg) => {
+    console.log(msg);
     if (msg.author.bot) return; //Stops replying to own commands
     if (msg.channel.type !== "text") return; //Stops crash on PM
     if (msg.channel.name == "simcraftbot") return;
@@ -115,7 +116,7 @@ client.on("message", async (msg) => {
     }
     if (weirdchampStatus) {
         const weirdchamp = msg.guild.emojis.cache.find(
-            (emoji) => emoji.name === "weird"
+            (emoji) => emoji.name === "christmas"
         );
         if (weirdchamp != null) {
             msg.react(weirdchamp);
