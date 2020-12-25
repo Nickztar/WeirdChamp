@@ -115,7 +115,7 @@ client.on("message", async (msg) => {
     }
     if (weirdchampStatus) {
         const weirdchamp = msg.guild.emojis.cache.find(
-            (emoji) => emoji.name === "christmas"
+            (emoji) => emoji.name === "peppoChristmas"
         );
         if (weirdchamp != null) {
             msg.react(weirdchamp);
