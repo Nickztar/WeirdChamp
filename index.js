@@ -61,6 +61,19 @@ app.get("/api/bot/random/:id", async (req, res) => {
     res.send(true);
 });
 
+app.get("/api/bot/fetchSounds", async (req, res) => {
+    fileMap = new Map();
+    fileSet = new Map();
+    s3.listObjects({ Bucket: 'weirdchamp' }, function (err, data) {
+        if(err)throw err;
+        data.Contents.forEach(function(file, index){
+            var key = file.Key;
+            fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
+            fileMap.set(index, key);
+        })
+    });
+});
+
 app.get("/api/bot/specific/", async (req, res) => {
     const { id, song } = req.query;
     const channel = await client.channels.fetch(id);
