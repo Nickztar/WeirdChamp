@@ -200,7 +200,7 @@ client.on("message", async (msg) => {
         } else {
             await playRandom(voiceChannel);
         }
-    } else if (msg.content.startsWith(`${prefix}splitteams`)) {
+    } else if (msg.content.startsWith(`${prefix}inhouse`)) {
         const voiceChannel = msg.member.voice.channel;
         const args = msg.content.split(" ");
         if (!voiceChannel)
