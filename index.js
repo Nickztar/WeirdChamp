@@ -200,6 +200,34 @@ client.on("message", async (msg) => {
         } else {
             await playRandom(voiceChannel);
         }
+    } else if (msg.content.startsWith(`${prefix}splitteams`)) {
+        const voiceChannel = msg.member.voice.channel;
+        const args = msg.content.split(" ");
+        if (!voiceChannel)
+            return msg.channel.send(
+                "You're not in a voice channel! <:weird:668843974504742912>"
+            );
+        const secondChannel = msg.guild.channels.cache.get(args[1] || "787071620622581790");
+        
+        const channels = [voiceChannel, secondChannel];
+        const members = [...voiceChannel.members.values()];
+        console.log(members.length);
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        shuffleArray(members)
+        let teamNumber = 0;
+        let numteams = 2;
+        for (let i = 0; i < members.length; i++){
+            let member = members[i];
+            await member.voice.setChannel(channels[teamNumber])
+            teamNumber += 1;
+            if (teamNumber == numteams)
+               teamNumber = 0
+        }
     } else {
         msg.channel.send("Not a valid command! <:weird:668843974504742912>");
         return;
