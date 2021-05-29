@@ -138,6 +138,13 @@ client.on("clickButton", async (button) => {
             );
         await playRandom(channel);
         await button.defer();
+    } else {
+        const channel = await client.channels.fetch("621035571057524737");
+        var fileName = button.id.replace("play_", "");
+        if (fileSet.has(fileName)) {
+            await playFromRandom(channel, fileName.toLowerCase());
+        }
+        await button.defer();
     }
 });
 client.on("message", async (msg) => {
@@ -274,6 +281,37 @@ client.on("message", async (msg) => {
                 buttons: [button],
             }
         );
+    } else if (msg.content.startsWith(`${prefix}megabutton`)) {
+        const soundButtons = [];
+        var fileArr = [...fileSet.keys()];
+        fileArr.sort((a, b) => {
+            var nameA = a.toLowerCase(),
+                nameB = b.toLowerCase();
+            if (nameA < nameB)
+                //sort string ascending
+                return -1;
+            if (nameA > nameB) return 1;
+            return 0; //default return value (no sorting)
+        });
+        fileArr.forEach((key) => {
+            let button = new disbut.MessageButton()
+                .setStyle("blurple") //default: blurple
+                .setLabel(key) //default: NO_LABEL_PROVIDED
+                .setID(`play_${key}`); //note: if you use the style "url" you must provide url using .setURL('https://example.com')
+            soundButtons.push(button);
+        });
+        let buttonCache = [];
+        soundButtons.forEach((btn, i) => {
+            if (buttonCache.length == 0 && i != soundButtons.length - 1) {
+                buttonCache.push(btn);
+            } else {
+                buttonCache.push(btn);
+                msg.channel.send("<:weird:668843974504742912>", {
+                    buttons: [...buttonCache],
+                });
+                buttonCache = [];
+            }
+        });
     } else {
         msg.channel.send("Not a valid command! <:weird:668843974504742912>");
         return;
