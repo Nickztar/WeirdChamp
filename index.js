@@ -306,7 +306,7 @@ client.on("message", async (msg) => {
                 buttonCache.push(btn);
             } else {
                 buttonCache.push(btn);
-                msg.channel.send("<:weird:668843974504742912>", {
+                msg.channel.send(".", {
                     buttons: [...buttonCache],
                 });
                 buttonCache = [];
