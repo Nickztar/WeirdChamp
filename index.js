@@ -137,6 +137,7 @@ client.on("clickButton", async (button) => {
                 "You're not in a voice channel! <:weird:668843974504742912>"
             );
         await playRandom(channel);
+        await button.defer();
     }
 });
 client.on("message", async (msg) => {
