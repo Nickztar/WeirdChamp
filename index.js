@@ -8,6 +8,7 @@ const app = express();
 const aws = require("aws-sdk");
 
 const client = new Client();
+const disbut = require("discord-buttons")(client);
 const queue = new Map();
 aws.config.update({
     region: "eu-north-1",
@@ -128,7 +129,16 @@ client.on("ready", () => {
 });
 
 //Various on message commands.
-
+client.on("clickButton", async (button) => {
+    if (button.id === "play_random") {
+        const channel = await client.channels.fetch("621035571057524737");
+        if (!channel)
+            return button.channel.send(
+                "You're not in a voice channel! <:weird:668843974504742912>"
+            );
+        await playRandom(channel);
+    }
+});
 client.on("message", async (msg) => {
     if (msg.author.bot) return; //Stops replying to own commands
     if (msg.channel.type !== "text") return; //Stops crash on PM
@@ -251,6 +261,18 @@ client.on("message", async (msg) => {
             teamNumber += 1;
             if (teamNumber == numteams) teamNumber = 0;
         }
+    } else if (msg.content.startsWith(`${prefix}button`)) {
+        let button = new disbut.MessageButton()
+            .setStyle("blurple") //default: blurple
+            .setLabel("Play sound") //default: NO_LABEL_PROVIDED
+            .setID("play_random"); //note: if you use the style "url" you must provide url using .setURL('https://example.com')
+
+        msg.channel.send(
+            "Click here to play random sound <:Happy:711247709729718312>",
+            {
+                buttons: [button],
+            }
+        );
     } else {
         msg.channel.send("Not a valid command! <:weird:668843974504742912>");
         return;
