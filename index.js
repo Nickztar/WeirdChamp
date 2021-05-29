@@ -48,7 +48,7 @@ s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
         var key = file.Key;
-        fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
+        fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
         fileMap.set(index, key);
     });
 });
@@ -126,6 +126,7 @@ client.on("ready", () => {
         )
         .catch(console.error);
     console.log(`Logged in as ${client.user.tag}!`);
+    console.log(fileSet);
 });
 
 //Various on message commands.
