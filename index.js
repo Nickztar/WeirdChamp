@@ -126,7 +126,6 @@ client.on("ready", () => {
         )
         .catch(console.error);
     console.log(`Logged in as ${client.user.tag}!`);
-    console.log(fileSet);
 });
 
 //Various on message commands.
@@ -303,10 +302,8 @@ client.on("message", async (msg) => {
         });
         let buttonCache = [];
         soundButtons.forEach((btn, i) => {
-            if (buttonCache.length == 0 && i != soundButtons.length - 1) {
-                buttonCache.push(btn);
-            } else {
-                buttonCache.push(btn);
+            buttonCache.push(btn);
+            if (buttonCache.length == 5 || i == soundButtons.length - 1) {
                 msg.channel.send(".", {
                     buttons: [...buttonCache],
                 });
