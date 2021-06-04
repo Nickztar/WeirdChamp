@@ -15,8 +15,10 @@ aws.config.update({
     accessKeyId: process.env.S3_ID,
     secretAccessKey: process.env.S3_KEY,
 });
+const S3_BUCKET = "weirdchamp";
 const s3 = new aws.S3({ apiVersion: "2006-03-01" });
 var whitelist = [
+    "http://localhost:3000",
     "https://weirdchamp.wtf",
     "https://www.weirdchamp.wtf",
     "https://dev.weirdchamp.wtf",
@@ -34,7 +36,7 @@ var corsOptions = {
     },
 };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 // app.use(cors());
 //Statics
 const prefix = "!"; //Should be in DB probably, persist though restarts
@@ -44,7 +46,7 @@ const regYoutube =
 //Sound files
 const fileMap = new Map();
 const fileSet = new Map();
-s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
+s3.listObjects({ Bucket: S3_BUCKET }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
         var key = file.Key;
@@ -56,6 +58,37 @@ s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
 //States
 let isReady = true; //Not sure how this is supposed to work for multiple servers?
 let weirdchampStatus = true; //Should be in DB probably, persist though restarts
+
+// Routes
+app.use("/api/discord", require("./discord"));
+
+app.get("/api/aws/signedurl", async (req, res) => {
+    console.log(req.body);
+    const fileName = req.body.fileName;
+    const fileType = req.body.fileType;
+    // Set up the payload of what we are sending to the S3 api
+    const s3Params = {
+        Bucket: S3_BUCKET,
+        Key: fileName,
+        Expires: 500,
+        ContentType: fileType,
+        ACL: "public-read",
+    };
+    // Make a request to the S3 API to get a signed URL which we can use to upload our file
+    s3.getSignedUrl("putObject", s3Params, (err, data) => {
+        if (err) {
+            console.log(err);
+            res.json({ success: false, error: err });
+        }
+        // Data payload of what we are sending back, the url of the signedRequest and a URL where we can access the content after its saved.
+        const returnData = {
+            signedRequest: data,
+            url: `https://${S3_BUCKET}.s3.amazonaws.com/${fileName}`,
+        };
+        // Send it all back
+        res.json({ success: true, data: { returnData } });
+    });
+});
 
 app.get("/api/bot/random/:id", async (req, res) => {
     const { id } = req.params;
