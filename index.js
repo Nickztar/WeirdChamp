@@ -36,7 +36,7 @@ var corsOptions = {
     },
 };
 
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 // app.use(cors());
 //Statics
 const prefix = "!"; //Should be in DB probably, persist though restarts
