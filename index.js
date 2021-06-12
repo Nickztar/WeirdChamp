@@ -5,8 +5,8 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const app = express();
+const bodyParser = require("body-parser");
 const aws = require("aws-sdk");
-
 const client = new Client();
 const disbut = require("discord-buttons")(client);
 const queue = new Map();
@@ -19,6 +19,7 @@ const S3_BUCKET = "weirdchamp";
 const s3 = new aws.S3({ apiVersion: "2006-03-01" });
 var whitelist = [
     "http://localhost:3000",
+    "https://weirdchamp-next.vercel.app",
     "https://weirdchamp.wtf",
     "https://www.weirdchamp.wtf",
     "https://dev.weirdchamp.wtf",
@@ -37,6 +38,7 @@ var corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(bodyParser.json());
 // app.use(cors());
 //Statics
 const prefix = "!"; //Should be in DB probably, persist though restarts
@@ -46,12 +48,14 @@ const regYoutube =
 //Sound files
 const fileMap = new Map();
 const fileSet = new Map();
+const s3Files = [];
 s3.listObjects({ Bucket: S3_BUCKET }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
         var key = file.Key;
         fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
         fileMap.set(index, key);
+        s3Files.push(file);
     });
 });
 
@@ -116,6 +120,15 @@ app.get("/api/bot/specific/", async (req, res) => {
     await playFromRandom(channel, song);
     res.send(true);
 });
+app.post("/api/bot/specific/", async (req, res) => {
+    const { soundID, channelID } = req.body;
+    const channel = await client.channels.fetch(channelID);
+    await playFromRandom(
+        channel,
+        soundID.replace(/(.wav)|(.mp3)/gm, "").toLowerCase()
+    );
+    res.send(true);
+});
 
 app.get("/api/bot/files", async (req, res) => {
     var fileArr = [...fileSet.keys()];
@@ -128,7 +141,7 @@ app.get("/api/bot/files", async (req, res) => {
         if (nameA > nameB) return 1;
         return 0; //default return value (no sorting)
     });
-    res.send(fileArr);
+    res.send(s3Files);
 });
 
 app.get("/api/bot/guilds", async (req, res) => {
