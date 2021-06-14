@@ -66,7 +66,12 @@ let weirdchampStatus = true; //Should be in DB probably, persist though restarts
 // Routes
 app.use("/api/discord", require("./discord"));
 
-app.get("/api/aws/signedurl", async (req, res) => {
+app.get("/api/aws/geturlbykey", async (req, res) => {
+    const key = req.query.key;
+    return getS3Url(key);
+})
+
+app.post("/api/aws/signedurl", async (req, res) => {
     console.log(req.body);
     const fileName = req.body.fileName;
     const fileType = req.body.fileType;
