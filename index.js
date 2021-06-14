@@ -68,7 +68,8 @@ app.use("/api/discord", require("./discord"));
 
 app.get("/api/aws/geturlbykey", async (req, res) => {
     const key = req.query.key;
-    return getS3Url(key);
+    const url = getS3Url(key); 
+    res.send(url);
 })
 
 app.post("/api/aws/signedurl", async (req, res) => {
