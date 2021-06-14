@@ -241,6 +241,19 @@ client.on("message", async (msg) => {
                 : `\nWeirdchamp disabled ❌`
         );
         return;
+    } else if (msg.content.startsWith(`${prefix}fetch`)){
+        fileMap = new Map();
+        fileSet = new Map();
+        s3Files = [];
+        s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
+            if (err) throw err;
+            data.Contents.forEach(function (file, index) {
+                var key = file.Key;
+                fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
+                fileMap.set(index, key);
+                s3Files.push(file);
+            });
+        });
     } else if (msg.content.startsWith(`${prefix}goodbot`)) {
         msg.reply("Thank you sir! <:Happy:711247709729718312>");
         return;
