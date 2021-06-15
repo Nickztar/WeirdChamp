@@ -28,7 +28,6 @@ var whitelist = [
 ];
 var corsOptions = {
     origin: function (origin, callback) {
-        console.log(origin);
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
@@ -68,12 +67,11 @@ app.use("/api/discord", require("./discord"));
 
 app.get("/api/aws/geturlbykey", async (req, res) => {
     const key = req.query.key;
-    const url = getS3Url(key); 
+    const url = getS3Url(key);
     res.send(url);
-})
+});
 
 app.post("/api/aws/signedurl", async (req, res) => {
-    console.log(req.body);
     const fileName = req.body.fileName;
     const fileType = req.body.fileType;
     // Set up the payload of what we are sending to the S3 api
@@ -247,7 +245,7 @@ client.on("message", async (msg) => {
                 : `\nWeirdchamp disabled ❌`
         );
         return;
-    } else if (msg.content.startsWith(`${prefix}fetch`)){
+    } else if (msg.content.startsWith(`${prefix}fetch`)) {
         fileMap = new Map();
         fileSet = new Map();
         s3Files = [];
@@ -318,7 +316,6 @@ client.on("message", async (msg) => {
 
         const channels = [voiceChannel, secondChannel];
         const members = [...voiceChannel.members.values()];
-        console.log(members.length);
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
