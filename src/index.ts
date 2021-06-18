@@ -1,15 +1,19 @@
-const { Client } = require("discord.js");
-const yts = require("yt-search");
-const ytdl = require("ytdl-core");
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import { Client, Guild, GuildMember, Message, VoiceChannel } from "discord.js";
+import yts from "yt-search";
+import ytdl from "ytdl-core";
+import express from "express";
+import cors from "cors";
+import { IQueueContruct, IYoutubeSong } from "../types/DiscordTypes";
+import dotenv from "dotenv";
+dotenv.config();
 const app = express();
-const bodyParser = require("body-parser");
-const aws = require("aws-sdk");
+import bodyParser from "body-parser";
+import aws from "aws-sdk";
 const client = new Client();
-const disbut = require("discord-buttons")(client);
-const queue = new Map();
+import disbut from "discord-buttons";
+disbut(client);
+// const disbut = require("discord-buttons")(client);
+const queue = new Map<string, IQueueContruct>();
 aws.config.update({
     region: "eu-north-1",
     accessKeyId: process.env.S3_ID,
@@ -17,7 +21,7 @@ aws.config.update({
 });
 const S3_BUCKET = "weirdchamp";
 const s3 = new aws.S3({ apiVersion: "2006-03-01" });
-var whitelist = [
+let whitelist = [
     "http://localhost:3000",
     "https://weirdchamp-next.vercel.app",
     "https://weirdchamp.wtf",
@@ -26,57 +30,56 @@ var whitelist = [
     "https://weirdchamp.vercel.app",
     "https://www.weirdchamp.vercel.app",
 ];
-var corsOptions = {
-    origin: function (origin, callback) {
-        if (whitelist.indexOf(origin) !== -1 || !origin) {
-            callback(null, true);
-        } else {
-            callback(new Error(`Not allowed by CORS. ORIGIN: ${origin}`));
-        }
-    },
-};
 
-app.use(cors(corsOptions));
+app.use(
+    cors({
+        origin(origin, callback) {
+            if (whitelist.indexOf(origin) !== -1 || !origin) {
+                callback(null, true);
+            } else {
+                callback(new Error(`Not allowed by CORS. ORIGIN: ${origin}`));
+            }
+        },
+    })
+);
 app.use(bodyParser.json());
 // app.use(cors());
-//Statics
-const prefix = "!"; //Should be in DB probably, persist though restarts
+// Statics
+const prefix = "!"; // Should be in DB probably, persist though restarts
 const regYoutube =
     /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
-//Sound files
-const fileMap = new Map();
-const fileSet = new Map();
-const s3Files = [];
+// Sound files
+let fileMap = new Map<number, string>();
+let fileSet = new Map<string, string>();
+let s3Files: Array<aws.S3.Object> = [];
 s3.listObjects({ Bucket: S3_BUCKET }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
-        var key = file.Key;
+        const key = file.Key;
         fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
         fileMap.set(index, key);
         s3Files.push(file);
     });
 });
 
-//States
-let isReady = true; //Not sure how this is supposed to work for multiple servers?
-let weirdchampStatus = true; //Should be in DB probably, persist though restarts
+// States
+let isReady = true; // Not sure how this is supposed to work for multiple servers?
+let weirdchampStatus = true; // Should be in DB probably, persist though restarts
 
 // Routes
-app.use("/api/discord", require("./discord"));
-
 app.get("/api/aws/geturlbykey", async (req, res) => {
-    const key = req.query.key;
+    const key = req.query.key as string;
     const url = getS3Url(key);
     res.send(url);
 });
 
 app.get("/api/youtube/mp3", async function (req, res) {
     try {
-        const videoUrl = req.query.videoUrl;
+        const videoUrl = req.query.videoUrl as string;
         const songInfo = await ytdl.getInfo(videoUrl);
-        if (songInfo.videoDetails.lengthSeconds > 5 * 60)
-            //No more than 5 minutes...
+        if (parseInt(songInfo.videoDetails.lengthSeconds) > 5 * 60)
+            // No more than 5 minutes...
             res.status(403).send("too long");
         else {
             const videoReadableStream = ytdl(songInfo.videoDetails.video_url, {
@@ -129,8 +132,12 @@ app.post("/api/aws/signedurl", async (req, res) => {
 app.get("/api/bot/random/:id", async (req, res) => {
     const { id } = req.params;
     const channel = await client.channels.fetch(id);
-    await playRandom(channel);
-    res.send(true);
+    if (channel instanceof VoiceChannel) {
+        await playRandom(channel);
+        res.send(true);
+    } else {
+        res.send(false);
+    }
 });
 
 app.get("/api/bot/fetchSounds", async (req, res) => {
@@ -139,7 +146,7 @@ app.get("/api/bot/fetchSounds", async (req, res) => {
     s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
         if (err) throw err;
         data.Contents.forEach(function (file, index) {
-            var key = file.Key;
+            const key = file.Key;
             fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
             fileMap.set(index, key);
         });
@@ -147,40 +154,50 @@ app.get("/api/bot/fetchSounds", async (req, res) => {
 });
 
 app.get("/api/bot/specific/", async (req, res) => {
-    const { id, song } = req.query;
+    const id = req.query.id as string;
+    const song = req.query.song as string;
     const channel = await client.channels.fetch(id);
-    await playFromRandom(channel, song);
-    res.send(true);
+    if (channel instanceof VoiceChannel) {
+        await playFromRandom(channel, song);
+        res.send(true);
+    } else {
+        res.send(false);
+    }
 });
 app.post("/api/bot/specific/", async (req, res) => {
-    const { soundID, channelID } = req.body;
+    const soundID = req.query.soundID as string;
+    const channelID = req.query.channelID as string;
     const channel = await client.channels.fetch(channelID);
-    await playFromRandom(
-        channel,
-        soundID.replace(/(.wav)|(.mp3)/gm, "").toLowerCase()
-    );
-    res.send(true);
+    if (channel instanceof VoiceChannel) {
+        await playFromRandom(
+            channel,
+            soundID.replace(/(.wav)|(.mp3)/gm, "").toLowerCase()
+        );
+        res.send(true);
+    } else {
+        res.send(false);
+    }
 });
 
 app.get("/api/bot/files", async (req, res) => {
-    var fileArr = [...fileSet.keys()];
+    const fileArr = [...fileSet.keys()];
     fileArr.sort((a, b) => {
-        var nameA = a.toLowerCase(),
+        const nameA = a.toLowerCase(),
             nameB = b.toLowerCase();
         if (nameA < nameB)
-            //sort string ascending
+            // sort string ascending
             return -1;
         if (nameA > nameB) return 1;
-        return 0; //default return value (no sorting)
+        return 0; // default return value (no sorting)
     });
     res.send(s3Files);
 });
 
 app.get("/api/bot/guilds", async (req, res) => {
-    //Auth user from firebase (?)
-    //Get all guilds
-    //Get the guilds where guilds.members.contains(user.DiscordID)
-    //Return those guilds
+    // Auth user from firebase (?)
+    // Get all guilds
+    // Get the guilds where guilds.members.contains(user.DiscordID)
+    // Return those guilds
     res.send(client.guilds.cache);
 });
 
@@ -192,10 +209,10 @@ app.get("/api/bot/channels/:guildId", async (req, res) => {
 
 const port = process.env.PORT || 3030;
 
-app.listen(port, console.log("API running" + port));
+app.listen(port, () => console.log("API running" + port));
 client.login(process.env.DISCORD_KEY);
 
-//When user is ready
+// When user is ready
 client.on("ready", () => {
     client.user
         .setActivity(`${prefix}weirdchamp`)
@@ -206,28 +223,33 @@ client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-//Various on message commands.
+// Various on message commands.
+//@ts-ignore
 client.on("clickButton", async (button) => {
+    const channel = await client.channels.fetch("621035571057524737");
+    const isVoice = channel instanceof VoiceChannel;
     if (button.id === "play_random") {
-        const channel = await client.channels.fetch("621035571057524737");
-        if (!channel)
+        if (!channel || !isVoice)
             return button.channel.send(
                 "You're not in a voice channel! <:weird:668843974504742912>"
             );
-        await playRandom(channel);
+        await playRandom(channel as VoiceChannel);
         await button.defer();
     } else {
         const channel = await client.channels.fetch("621035571057524737");
-        var fileName = button.id.replace("play_", "");
-        if (fileSet.has(fileName)) {
-            await playFromRandom(channel, fileName.toLowerCase());
+        const fileName = button.id.replace("play_", "");
+        if (fileSet.has(fileName) && isVoice) {
+            await playFromRandom(
+                channel as VoiceChannel,
+                fileName.toLowerCase()
+            );
         }
         await button.defer();
     }
 });
 client.on("message", async (msg) => {
-    if (msg.author.bot) return; //Stops replying to own commands
-    if (msg.channel.type !== "text") return; //Stops crash on PM
+    if (msg.author.bot) return; // Stops replying to own commands
+    if (msg.channel.type !== "text") return; // Stops crash on PM
     if (msg.channel.name == "simcraftbot") return;
     if (msg.content === "<:weird:668843974504742912>") {
         msg.reply(
@@ -243,7 +265,7 @@ client.on("message", async (msg) => {
         }
     }
 
-    //Commands below
+    // Commands below
     if (!msg.content.startsWith(prefix)) return;
 
     const serverQueue = queue.get(msg.guild.id);
@@ -280,7 +302,7 @@ client.on("message", async (msg) => {
         s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
             if (err) throw err;
             data.Contents.forEach(function (file, index) {
-                var key = file.Key;
+                const key = file.Key;
                 fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
                 fileMap.set(index, key);
                 s3Files.push(file);
@@ -290,16 +312,16 @@ client.on("message", async (msg) => {
         msg.reply("Thank you sir! <:Happy:711247709729718312>");
         return;
     } else if (msg.content.startsWith(`${prefix}songs`)) {
-        var string = "**Songs: " + `(${fileSet.size})**` + "```";
-        var fileArr = [...fileSet.keys()];
+        let string = "**Songs: " + `(${fileSet.size})**` + "```";
+        const fileArr = [...fileSet.keys()];
         fileArr.sort((a, b) => {
-            var nameA = a.toLowerCase(),
+            const nameA = a.toLowerCase(),
                 nameB = b.toLowerCase();
             if (nameA < nameB)
-                //sort string ascending
+                // sort string ascending
                 return -1;
             if (nameA > nameB) return 1;
-            return 0; //default return value (no sorting)
+            return 0; // default return value (no sorting)
         });
         fileArr.forEach((key) => {
             string += `${key}\n`;
@@ -344,7 +366,7 @@ client.on("message", async (msg) => {
 
         const channels = [voiceChannel, secondChannel];
         const members = [...voiceChannel.members.values()];
-        function shuffleArray(array) {
+        function shuffleArray(array: Array<GuildMember>) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
@@ -352,49 +374,51 @@ client.on("message", async (msg) => {
         }
         shuffleArray(members);
         let teamNumber = 0;
-        let numteams = 2;
+        const numteams = 2;
         for (let i = 0; i < members.length; i++) {
-            let member = members[i];
+            const member = members[i];
             await member.voice.setChannel(channels[teamNumber]);
             teamNumber += 1;
             if (teamNumber == numteams) teamNumber = 0;
         }
     } else if (msg.content.startsWith(`${prefix}button`)) {
-        let button = new disbut.MessageButton()
-            .setStyle("blurple") //default: blurple
-            .setLabel("Play sound") //default: NO_LABEL_PROVIDED
-            .setID("play_random"); //note: if you use the style "url" you must provide url using .setURL('https://example.com')
+        const button = new disbut.MessageButton()
+            .setStyle("blurple") // default: blurple
+            .setLabel("Play sound") // default: NO_LABEL_PROVIDED
+            .setID("play_random"); // note: if you use the style "url" you must provide url using .setURL('https://example.com')
 
         msg.channel.send(
             "Click here to play random sound <:Happy:711247709729718312>",
             {
+                //@ts-ignore
                 buttons: [button],
             }
         );
     } else if (msg.content.startsWith(`${prefix}megabutton`)) {
-        const soundButtons = [];
-        var fileArr = [...fileSet.keys()];
+        const soundButtons: Array<disbut.MessageButton> = [];
+        const fileArr = [...fileSet.keys()];
         fileArr.sort((a, b) => {
-            var nameA = a.toLowerCase(),
+            const nameA = a.toLowerCase(),
                 nameB = b.toLowerCase();
             if (nameA < nameB)
-                //sort string ascending
+                // sort string ascending
                 return -1;
             if (nameA > nameB) return 1;
-            return 0; //default return value (no sorting)
+            return 0; // default return value (no sorting)
         });
         fileArr.forEach((key) => {
-            let button = new disbut.MessageButton()
-                .setStyle("blurple") //default: blurple
-                .setLabel(key) //default: NO_LABEL_PROVIDED
-                .setID(`play_${key}`); //note: if you use the style "url" you must provide url using .setURL('https://example.com')
+            const button = new disbut.MessageButton()
+                .setStyle("blurple") // default: blurple
+                .setLabel(key) // default: NO_LABEL_PROVIDED
+                .setID(`play_${key}`); // note: if you use the style "url" you must provide url using .setURL('https://example.com')
             soundButtons.push(button);
         });
-        let buttonCache = [];
+        let buttonCache: Array<disbut.MessageButton> = [];
         soundButtons.forEach((btn, i) => {
             buttonCache.push(btn);
             if (buttonCache.length == 5 || i == soundButtons.length - 1) {
                 msg.channel.send(".", {
+                    //@ts-ignore
                     buttons: [...buttonCache],
                 });
                 buttonCache = [];
@@ -406,14 +430,14 @@ client.on("message", async (msg) => {
     }
 });
 
-//React to someone reacting with :Pet:
+// React to someone reacting with :Pet:
 client.on("messageReactionAdd", async (msgRect) => {
     if (weirdchampStatus) {
         if (msgRect.me) return;
         if (msgRect.emoji.name == "pet") {
             msgRect.message.reply("<:KEKW:652170559047598081>");
         }
-        if (msgRect._emoji.name == "weird") {
+        if (msgRect.emoji.name == "weird") {
             if (msgRect.message.content.startsWith(`${prefix}random`)) {
                 const voiceChannel = msgRect.message.member.voice.channel;
                 if (!voiceChannel)
@@ -434,10 +458,10 @@ client.on("messageReactionAdd", async (msgRect) => {
     }
 });
 
-//Join when a user joins play random sounds
+// Join when a user joins play random sounds
 client.on("voiceStateUpdate", async (oldMember, newMember) => {
-    let newUserChannel = newMember.channel;
-    let oldUserChannel = oldMember.channel;
+    const newUserChannel = newMember.channel;
+    const oldUserChannel = oldMember.channel;
     if (newMember.id != process.env.CLIENT_ID && isReady) {
         if (newUserChannel !== null) {
             if (oldUserChannel != newUserChannel) {
@@ -447,9 +471,13 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
     }
 });
 
-//Client login
-//Youtube functions
-async function execute(message, serverQueue, find) {
+// Client login
+// Youtube functions
+async function execute(
+    message: Message,
+    serverQueue: IQueueContruct,
+    find: boolean
+) {
     const args = message.content.split(" ");
 
     const voiceChannel = message.member.voice.channel;
@@ -475,8 +503,8 @@ async function execute(message, serverQueue, find) {
             );
         }
         song = {
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url,
+            title: songInfo.title,
+            url: songInfo.url,
         };
     } else {
         if (!args[1].match(regYoutube)) {
@@ -492,9 +520,9 @@ async function execute(message, serverQueue, find) {
     }
 
     if (!serverQueue) {
-        const queueContruct = {
+        const queueContruct: IQueueContruct = {
             textChannel: message.channel,
-            voiceChannel: voiceChannel,
+            voiceChannel,
             connection: null,
             songs: [],
             volume: 2,
@@ -505,7 +533,7 @@ async function execute(message, serverQueue, find) {
         queueContruct.songs.push(song);
 
         try {
-            var connection = await voiceChannel.join();
+            const connection = await voiceChannel.join();
             queueContruct.connection = connection;
             play(message.guild, queueContruct.songs[0]);
         } catch (err) {
@@ -521,7 +549,7 @@ async function execute(message, serverQueue, find) {
     }
 }
 
-function skip(message, serverQueue) {
+function skip(message: Message, serverQueue: IQueueContruct) {
     if (!message.member.voice.channel)
         return message.channel.send(
             "Join a voice channel to skip the music! <:pepega:709781824771063879>"
@@ -536,7 +564,7 @@ function skip(message, serverQueue) {
     serverQueue.connection.dispatcher.end();
 }
 
-function stop(message, serverQueue) {
+function stop(message: Message, serverQueue: IQueueContruct) {
     if (!message.member.voice.channel)
         return message.channel.send(
             "Join a voice channel to stop the music! <:pepega:709781824771063879>"
@@ -549,7 +577,7 @@ function stop(message, serverQueue) {
     serverQueue.connection.dispatcher.end();
 }
 
-function play(guild, song) {
+function play(guild: Guild, song: IYoutubeSong) {
     const serverQueue = queue.get(guild.id);
     isReady = false;
     if (!song) {
@@ -582,13 +610,13 @@ function play(guild, song) {
     );
 }
 
-async function playRandom(channel) {
+async function playRandom(channel: VoiceChannel) {
     if (isReady) {
         try {
             const connection = await channel.join();
             isReady = false;
             const randNummer = getRandomInt(fileMap.size);
-            var key = fileMap.get(randNummer);
+            const key = fileMap.get(randNummer);
             const url = getS3Url(key);
             const dispatcher = connection.play(url, {
                 volume: 0.5,
@@ -606,12 +634,12 @@ async function playRandom(channel) {
         }
     }
 }
-async function playFromRandom(channel, song) {
+async function playFromRandom(channel: VoiceChannel, song: string) {
     if (isReady) {
         try {
             const connection = await channel.join();
             isReady = false;
-            var key = fileSet.get(song);
+            const key = fileSet.get(song);
             const url = getS3Url(key);
             const dispatcher = connection.play(url, {
                 volume: 0.5,
@@ -630,7 +658,7 @@ async function playFromRandom(channel, song) {
     }
 }
 
-function getS3Url(key) {
+function getS3Url(key: string) {
     const url = s3.getSignedUrl("getObject", {
         Bucket: "weirdchamp",
         Key: key,
@@ -638,7 +666,7 @@ function getS3Url(key) {
     });
     return url;
 }
-//Utility functions
-function getRandomInt(max) {
+// Utility functions
+function getRandomInt(max: number) {
     return Math.floor(Math.random() * Math.floor(max));
 }
