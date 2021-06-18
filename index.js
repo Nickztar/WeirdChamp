@@ -71,6 +71,34 @@ app.get("/api/aws/geturlbykey", async (req, res) => {
     res.send(url);
 });
 
+app.get("/api/youtube/mp3", async function (req, res) {
+    try {
+        const videoUrl = req.query.videoUrl;
+        const songInfo = await ytdl.getInfo(videoUrl);
+        if (songInfo.videoDetails.lengthSeconds > 5 * 60)
+            //No more than 5 minutes...
+            res.status(403);
+        else {
+            const videoReadableStream = ytdl(songInfo.videoDetails.video_url, {
+                filter: "audioonly",
+            });
+            res.setHeader("Content-Type", "audio/mpeg; charset=utf-8");
+            res.setHeader(
+                "Content-Disposition",
+                'attachment; filename="file.mp3"'
+            );
+            const stream = videoReadableStream.pipe(res);
+
+            stream.on("finish", function () {
+                res.end();
+            });
+        }
+    } catch (err) {
+        console.log(err);
+        res.status(500);
+    }
+});
+
 app.post("/api/aws/signedurl", async (req, res) => {
     const fileName = req.body.fileName;
     const fileType = req.body.fileType;
