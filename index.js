@@ -77,7 +77,7 @@ app.get("/api/youtube/mp3", async function (req, res) {
         const songInfo = await ytdl.getInfo(videoUrl);
         if (songInfo.videoDetails.lengthSeconds > 5 * 60)
             //No more than 5 minutes...
-            res.status(403);
+            res.status(403).send("too long");
         else {
             const videoReadableStream = ytdl(songInfo.videoDetails.video_url, {
                 filter: "audioonly",
@@ -95,7 +95,7 @@ app.get("/api/youtube/mp3", async function (req, res) {
         }
     } catch (err) {
         console.log(err);
-        res.status(500);
+        res.status(500).send(err);
     }
 });
 
