@@ -5,22 +5,23 @@ import express from "express";
 import cors from "cors";
 import { IQueueContruct, IYoutubeSong } from "../types/DiscordTypes";
 import dotenv from "dotenv";
-dotenv.config();
-const app = express();
 import bodyParser from "body-parser";
 import aws from "aws-sdk";
-const client = new Client();
 import disbut from "discord-buttons";
+import { AWS, ExpressConst } from "../types/Constants";
+
+const client = new Client();
+dotenv.config();
+const app = express();
 disbut(client);
 // const disbut = require("discord-buttons")(client);
 const queue = new Map<string, IQueueContruct>();
 aws.config.update({
-    region: "eu-north-1",
+    region: AWS.REGION,
     accessKeyId: process.env.S3_ID,
     secretAccessKey: process.env.S3_KEY,
 });
-const S3_BUCKET = "weirdchamp";
-const s3 = new aws.S3({ apiVersion: "2006-03-01" });
+const s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
 let whitelist = [
     "http://localhost:3000",
     "https://weirdchamp-next.vercel.app",
@@ -34,7 +35,7 @@ let whitelist = [
 app.use(
     cors({
         origin(origin, callback) {
-            if (whitelist.indexOf(origin) !== -1 || !origin) {
+            if (ExpressConst.WHITELIST.indexOf(origin) !== -1 || !origin) {
                 callback(null, true);
             } else {
                 callback(new Error(`Not allowed by CORS. ORIGIN: ${origin}`));
@@ -53,7 +54,7 @@ const regYoutube =
 let fileMap = new Map<number, string>();
 let fileSet = new Map<string, string>();
 let s3Files: Array<aws.S3.Object> = [];
-s3.listObjects({ Bucket: S3_BUCKET }, function (err, data) {
+s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
         const key = file.Key;
@@ -107,7 +108,7 @@ app.post("/api/aws/signedurl", async (req, res) => {
     const fileType = req.body.fileType;
     // Set up the payload of what we are sending to the S3 api
     const s3Params = {
-        Bucket: S3_BUCKET,
+        Bucket: AWS.S3_BUCKET,
         Key: fileName,
         Expires: 500,
         ContentType: fileType,
@@ -122,7 +123,7 @@ app.post("/api/aws/signedurl", async (req, res) => {
         // Data payload of what we are sending back, the url of the signedRequest and a URL where we can access the content after its saved.
         const returnData = {
             signedRequest: data,
-            url: `https://${S3_BUCKET}.s3.amazonaws.com/${fileName}`,
+            url: `https://${AWS.S3_BUCKET}.s3.amazonaws.com/${fileName}`,
         };
         // Send it all back
         res.json({ success: true, data: { returnData } });
@@ -143,7 +144,7 @@ app.get("/api/bot/random/:id", async (req, res) => {
 app.get("/api/bot/fetchSounds", async (req, res) => {
     fileMap = new Map();
     fileSet = new Map();
-    s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
+    s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
         if (err) throw err;
         data.Contents.forEach(function (file, index) {
             const key = file.Key;
@@ -299,7 +300,7 @@ client.on("message", async (msg) => {
         fileMap = new Map();
         fileSet = new Map();
         s3Files = [];
-        s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
+        s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
             if (err) throw err;
             data.Contents.forEach(function (file, index) {
                 const key = file.Key;
@@ -660,7 +661,7 @@ async function playFromRandom(channel: VoiceChannel, song: string) {
 
 function getS3Url(key: string) {
     const url = s3.getSignedUrl("getObject", {
-        Bucket: "weirdchamp",
+        Bucket: AWS.S3_BUCKET,
         Key: key,
         Expires: 60,
     });
