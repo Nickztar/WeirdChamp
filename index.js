@@ -45,9 +45,9 @@ const regYoutube =
     /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
 //Sound files
-const fileMap = new Map();
-const fileSet = new Map();
-const s3Files = [];
+let fileMap = new Map();
+let fileSet = new Map();
+let s3Files = [];
 s3.listObjects({ Bucket: S3_BUCKET }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
@@ -136,13 +136,9 @@ app.get("/api/bot/random/:id", async (req, res) => {
 app.get("/api/bot/fetchSounds", async (req, res) => {
     fileMap = new Map();
     fileSet = new Map();
-    s3.listObjects({ Bucket: "weirdchamp" }, function (err, data) {
-        if (err) throw err;
-        data.Contents.forEach(function (file, index) {
-            var key = file.Key;
-            fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
-            fileMap.set(index, key);
-        });
+    s3Files = [];
+    getS3Files().then(() => {
+        res.send("cool");
     });
 });
 
@@ -642,3 +638,21 @@ function getS3Url(key) {
 function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
+
+const getS3Files = async () => {
+    return new Promise((resolve, reject) => {
+        s3.listObjects({ Bucket: S3_BUCKET }, function (err, data) {
+            if (err) reject();
+            data.Contents.forEach(function (file, index) {
+                let key = file.Key;
+                fileSet.set(
+                    key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(),
+                    key
+                );
+                fileMap.set(index, key);
+                s3Files.push(file);
+            });
+            resolve();
+        });
+    });
+};
