@@ -22,16 +22,6 @@ aws.config.update({
     secretAccessKey: process.env.S3_KEY,
 });
 const s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
-let whitelist = [
-    "http://localhost:3000",
-    "https://weirdchamp-next.vercel.app",
-    "https://weirdchamp.wtf",
-    "https://www.weirdchamp.wtf",
-    "https://dev.weirdchamp.wtf",
-    "https://weirdchamp.vercel.app",
-    "https://www.weirdchamp.vercel.app",
-];
-
 app.use(
     cors({
         origin(origin, callback) {
