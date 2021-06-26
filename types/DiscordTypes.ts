@@ -1,10 +1,18 @@
 import {
     DMChannel,
+    Message,
     NewsChannel,
     TextChannel,
     VoiceChannel,
     VoiceConnection,
 } from "discord.js";
+
+export interface Command {
+    name: string
+    description: string
+    // Making `args` optional
+    execute: (message: Message, args?: string[]) => any;
+  }
 
 export interface IQueueContruct {
     textChannel: TextChannel | DMChannel | NewsChannel;
