@@ -9,6 +9,7 @@ import bodyParser from "body-parser";
 import aws from "aws-sdk";
 import disbut from "discord-buttons";
 import { AWS, ExpressConst } from "../types/Constants";
+import { asyncFilter } from "../utils/asyncFilter";
 
 const client = new Client();
 dotenv.config();
@@ -40,10 +41,10 @@ const prefix = "!"; // Should be in DB probably, persist though restarts
 const regYoutube =
     /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
-// Sound files
-let fileMap = new Map<number, string>();
-let fileSet = new Map<string, string>();
-let s3Files: Array<aws.S3.Object> = [];
+//Sound files
+let fileMap = new Map();
+let fileSet = new Map();
+let s3Files = [];
 s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
     if (err) throw err;
     data.Contents.forEach(function (file, index) {
@@ -134,13 +135,9 @@ app.get("/api/bot/random/:id", async (req, res) => {
 app.get("/api/bot/fetchSounds", async (req, res) => {
     fileMap = new Map();
     fileSet = new Map();
-    s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
-        if (err) throw err;
-        data.Contents.forEach(function (file, index) {
-            const key = file.Key;
-            fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
-            fileMap.set(index, key);
-        });
+    s3Files = [];
+    getS3Files().then(() => {
+        res.send("cool");
     });
 });
 
@@ -184,18 +181,98 @@ app.get("/api/bot/files", async (req, res) => {
     res.send(s3Files);
 });
 
-app.get("/api/bot/guilds", async (req, res) => {
-    // Auth user from firebase (?)
-    // Get all guilds
-    // Get the guilds where guilds.members.contains(user.DiscordID)
-    // Return those guilds
-    res.send(client.guilds.cache);
+app.post("/api/bot/teams", async (req, res) => {
+    try {
+        const moveModel = req.body;
+        await moveModel.channels.forEach(async (channel) => {
+            const guild = client.guilds.cache.find(
+                (g) => g.id == moveModel.guildId
+            );
+            const targetChannel = guild.channels.cache.find(
+                (c) => c.id == channel.id
+            );
+            const userVoiceStates = channel.users.map((user) => {
+                return guild.voiceStates.cache.find(
+                    (vs) => vs.member.id == user
+                );
+            });
+            await userVoiceStates.forEach(async (uVS) => {
+                if (uVS != null && uVS.channelID != targetChannel.id)
+                    await uVS.setChannel(targetChannel);
+            });
+        });
+        res.status(200).send(true);
+    } catch (ex) {
+        console.log(ex);
+        res.status(500);
+    }
 });
 
-app.get("/api/bot/channels/:guildId", async (req, res) => {
-    const { guildId } = req.params;
-    const guild = client.guilds.cache.find((x) => x.id == guildId);
-    res.send(guild.channels.cache);
+app.get("/api/bot/guilds", async (req, res) => {
+    const userId = req.query.DiscordID as string;
+
+    const guilds = await asyncFilter(
+        [...client.guilds.cache.values()],
+        async (guild: Guild) => {
+            const user = await guild.members.fetch(userId);
+            return user != null;
+        }
+    );
+    const mappedGuilds = guilds.map((guild) => {
+        return {
+            id: guild.id,
+            name: guild.name,
+            icon: guild.iconURL(),
+            channels: guild.channels.cache.reduce((filtered, channel) => {
+                if (
+                    channel.type == "voice" &&
+                    channel.id != guild.afkChannelID
+                ) {
+                    const currentVoiceUsers = guild.voiceStates.cache.reduce(
+                        (acc, user) => {
+                            if (
+                                user.channelID == channel.id &&
+                                !user.member.user.bot
+                            ) {
+                                const mappedUser = {
+                                    id: user.id,
+                                    name: user.member.nickname,
+                                    picture: user.member.user.avatarURL(),
+                                };
+                                acc.push(mappedUser);
+                            }
+                            return acc;
+                        },
+                        []
+                    );
+                    const mappedChannel = {
+                        id: channel.id,
+                        name: channel.name,
+                        currentUsers: currentVoiceUsers,
+                    };
+                    filtered.push(mappedChannel);
+                }
+                return filtered;
+            }, []),
+        };
+    });
+    res.send(mappedGuilds);
+});
+
+app.get("/api/bot/users/:guildId/:channelId", async (req, res) => {
+    const { channelId, guildId } = req.params;
+    const guild = client.guilds.cache.find((g) => g.id == guildId);
+    const currentVoiceUsers = guild.voiceStates.cache.filter(
+        (k) => k.channelID == channelId
+    );
+    const mappedUsers = currentVoiceUsers.map((user) => {
+        return {
+            id: user.id,
+            name: user.member.nickname,
+            picture: user.member.user.avatarURL(),
+        };
+    });
+    res.status(200).json(mappedUsers);
 });
 
 const port = process.env.PORT || 3030;
@@ -661,3 +738,21 @@ function getS3Url(key: string) {
 function getRandomInt(max: number) {
     return Math.floor(Math.random() * Math.floor(max));
 }
+
+const getS3Files = async () => {
+    return new Promise((resolve, reject) => {
+        s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
+            if (err) reject();
+            data.Contents.forEach(function (file, index) {
+                let key = file.Key;
+                fileSet.set(
+                    key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(),
+                    key
+                );
+                fileMap.set(index, key);
+                s3Files.push(file);
+            });
+            resolve(true);
+        });
+    });
+};
