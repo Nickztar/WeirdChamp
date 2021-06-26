@@ -3,26 +3,25 @@ import yts from "yt-search";
 import ytdl from "ytdl-core";
 import express from "express";
 import cors from "cors";
-import { IQueueContruct, IYoutubeSong } from "../types/DiscordTypes";
+import { IQueueContruct, IYoutubeSong, MoveModel } from "../types/DiscordTypes";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import aws from "aws-sdk";
 import disbut from "discord-buttons";
-import { AWS, ExpressConst } from "../types/Constants";
+import { AWS, ExpressConst, prefix, regYoutube } from "../types/Constants";
 import { asyncFilter } from "../utils/asyncFilter";
+import { execute, skip, stop } from "../utils/youtubeUtils";
+import { getS3Url, getS3Files, getSignedPost } from "../utils/s3Utils";
+import { getRandomInt } from "../utils/generalUtils";
 
 const client = new Client();
-dotenv.config();
+dotenv.config({ encoding: "UTF-8" });
 const app = express();
 disbut(client);
 // const disbut = require("discord-buttons")(client);
 const queue = new Map<string, IQueueContruct>();
-aws.config.update({
-    region: AWS.REGION,
-    accessKeyId: process.env.S3_ID,
-    secretAccessKey: process.env.S3_KEY,
-});
-const s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
+
+// const s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
 app.use(
     cors({
         origin(origin, callback) {
@@ -37,23 +36,11 @@ app.use(
 app.use(bodyParser.json());
 // app.use(cors());
 // Statics
-const prefix = "!"; // Should be in DB probably, persist though restarts
-const regYoutube =
-    /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;
 
 //Sound files
-let fileMap = new Map();
-let fileSet = new Map();
-let s3Files = [];
-s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
-    if (err) throw err;
-    data.Contents.forEach(function (file, index) {
-        const key = file.Key;
-        fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
-        fileMap.set(index, key);
-        s3Files.push(file);
-    });
-});
+let fileMap = new Map<number, string>();
+let fileSet = new Map<string, string>();
+let s3Files: aws.S3.Object[] = [];
 
 // States
 let isReady = true; // Not sure how this is supposed to work for multiple servers?
@@ -95,8 +82,8 @@ app.get("/api/youtube/mp3", async function (req, res) {
 });
 
 app.post("/api/aws/signedurl", async (req, res) => {
-    const fileName = req.body.fileName;
-    const fileType = req.body.fileType;
+    const fileName = req.body.fileName as string;
+    const fileType = req.body.fileType as string;
     // Set up the payload of what we are sending to the S3 api
     const s3Params = {
         Bucket: AWS.S3_BUCKET,
@@ -106,19 +93,12 @@ app.post("/api/aws/signedurl", async (req, res) => {
         ACL: "public-read",
     };
     // Make a request to the S3 API to get a signed URL which we can use to upload our file
-    s3.getSignedUrl("putObject", s3Params, (err, data) => {
-        if (err) {
-            console.log(err);
-            res.json({ success: false, error: err });
-        }
-        // Data payload of what we are sending back, the url of the signedRequest and a URL where we can access the content after its saved.
-        const returnData = {
-            signedRequest: data,
-            url: `https://${AWS.S3_BUCKET}.s3.amazonaws.com/${fileName}`,
-        };
-        // Send it all back
-        res.json({ success: true, data: { returnData } });
-    });
+    const { success, Error, data } = await getSignedPost(s3Params);
+    if (!success) {
+        res.json({ success: false, error: Error });
+    } else {
+        res.json({ success: true, data: { data } });
+    }
 });
 
 app.get("/api/bot/random/:id", async (req, res) => {
@@ -136,8 +116,12 @@ app.get("/api/bot/fetchSounds", async (req, res) => {
     fileMap = new Map();
     fileSet = new Map();
     s3Files = [];
-    getS3Files().then(() => {
-        res.send("cool");
+    const newFiles = await getS3Files();
+    newFiles.forEach((file, index) => {
+        const key = file.Key;
+        fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
+        fileMap.set(index, key);
+        s3Files.push(file);
     });
 });
 
@@ -183,8 +167,8 @@ app.get("/api/bot/files", async (req, res) => {
 
 app.post("/api/bot/teams", async (req, res) => {
     try {
-        const moveModel = req.body;
-        await moveModel.channels.forEach(async (channel) => {
+        const moveModel = req.body as MoveModel;
+        moveModel.channels.forEach(async (channel) => {
             const guild = client.guilds.cache.find(
                 (g) => g.id == moveModel.guildId
             );
@@ -196,7 +180,7 @@ app.post("/api/bot/teams", async (req, res) => {
                     (vs) => vs.member.id == user
                 );
             });
-            await userVoiceStates.forEach(async (uVS) => {
+            userVoiceStates.forEach(async (uVS) => {
                 if (uVS != null && uVS.channelID != targetChannel.id)
                     await uVS.setChannel(targetChannel);
             });
@@ -281,7 +265,7 @@ app.listen(port, () => console.log("API running" + port));
 client.login(process.env.DISCORD_KEY);
 
 // When user is ready
-client.on("ready", () => {
+client.on("ready", async () => {
     client.user
         .setActivity(`${prefix}weirdchamp`)
         .then((presence) =>
@@ -289,6 +273,13 @@ client.on("ready", () => {
         )
         .catch(console.error);
     console.log(`Logged in as ${client.user.tag}!`);
+    const currentFiles = await getS3Files();
+    currentFiles.forEach((file, index) => {
+        const key = file.Key;
+        fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
+        fileMap.set(index, key);
+        s3Files.push(file);
+    });
 });
 
 // Various on message commands.
@@ -367,14 +358,12 @@ client.on("message", async (msg) => {
         fileMap = new Map();
         fileSet = new Map();
         s3Files = [];
-        s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
-            if (err) throw err;
-            data.Contents.forEach(function (file, index) {
-                const key = file.Key;
-                fileSet.set(key.replace(".mp3", "").toLowerCase(), key);
-                fileMap.set(index, key);
-                s3Files.push(file);
-            });
+        const currentFiles = await getS3Files();
+        currentFiles.forEach((file, index) => {
+            const key = file.Key;
+            fileSet.set(key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(), key);
+            fileMap.set(index, key);
+            s3Files.push(file);
         });
     } else if (msg.content.startsWith(`${prefix}goodbot`)) {
         msg.reply("Thank you sir! <:Happy:711247709729718312>");
@@ -541,143 +530,6 @@ client.on("voiceStateUpdate", async (oldMember, newMember) => {
 
 // Client login
 // Youtube functions
-async function execute(
-    message: Message,
-    serverQueue: IQueueContruct,
-    find: boolean
-) {
-    const args = message.content.split(" ");
-
-    const voiceChannel = message.member.voice.channel;
-    if (!voiceChannel)
-        return message.channel.send(
-            "You're not in a voice channel! <:weird:668843974504742912>"
-        );
-    const permissions = voiceChannel.permissionsFor(message.client.user);
-    if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-        return message.channel.send(
-            "No permission <:weird:668843974504742912>"
-        );
-    }
-    let song;
-    if (find) {
-        const search = message.content.replace(`${prefix}search `, "");
-        const finds = await yts(search.toLowerCase());
-        const videos = finds.videos;
-        const songInfo = videos[0];
-        if (!songInfo) {
-            return message.channel.send(
-                `Couldn't find ${search} <:weird:668843974504742912>`
-            );
-        }
-        song = {
-            title: songInfo.title,
-            url: songInfo.url,
-        };
-    } else {
-        if (!args[1].match(regYoutube)) {
-            return message.channel.send(
-                "This is not valid fucking youtube link! <:weird:668843974504742912>"
-            );
-        }
-        const songInfo = await ytdl.getInfo(args[1]);
-        song = {
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url,
-        };
-    }
-
-    if (!serverQueue) {
-        const queueContruct: IQueueContruct = {
-            textChannel: message.channel,
-            voiceChannel,
-            connection: null,
-            songs: [],
-            volume: 2,
-            playing: true,
-        };
-        queue.set(message.guild.id, queueContruct);
-
-        queueContruct.songs.push(song);
-
-        try {
-            const connection = await voiceChannel.join();
-            queueContruct.connection = connection;
-            play(message.guild, queueContruct.songs[0]);
-        } catch (err) {
-            console.log(err);
-            queue.delete(message.guild.id);
-            return message.channel.send(err);
-        }
-    } else {
-        serverQueue.songs.push(song);
-        return message.channel.send(
-            `${song.title} has been added to the queue! <:Happy:711247709729718312>`
-        );
-    }
-}
-
-function skip(message: Message, serverQueue: IQueueContruct) {
-    if (!message.member.voice.channel)
-        return message.channel.send(
-            "Join a voice channel to skip the music! <:pepega:709781824771063879>"
-        );
-    if (!serverQueue)
-        return message.channel.send(
-            "No song to skip! <:pepega:709781824771063879>"
-        );
-    if (!serverQueue.connection.dispatcher) {
-        return;
-    }
-    serverQueue.connection.dispatcher.end();
-}
-
-function stop(message: Message, serverQueue: IQueueContruct) {
-    if (!message.member.voice.channel)
-        return message.channel.send(
-            "Join a voice channel to stop the music! <:pepega:709781824771063879>"
-        );
-    if (!serverQueue)
-        return message.channel.send(
-            "Something went fucking wrong! <:pepelaugh:699711830523773040>"
-        );
-    serverQueue.songs = [];
-    serverQueue.connection.dispatcher.end();
-}
-
-function play(guild: Guild, song: IYoutubeSong) {
-    const serverQueue = queue.get(guild.id);
-    isReady = false;
-    if (!song) {
-        serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
-        isReady = true;
-        return;
-    }
-    if (song.url == null) {
-        serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
-        isReady = true;
-        return;
-    }
-
-    const dispatcher = serverQueue.connection
-        .play(ytdl(song.url))
-        .on("finish", () => {
-            serverQueue.songs.shift();
-            isReady = true;
-            play(guild, serverQueue.songs[0]);
-        })
-        .on("error", (error) => {
-            console.error(error);
-            isReady = true;
-        });
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(
-        `Start playing: **${song.title}** <:pog:710437255231176764>`
-    );
-}
-
 async function playRandom(channel: VoiceChannel) {
     if (isReady) {
         try {
@@ -725,34 +577,3 @@ async function playFromRandom(channel: VoiceChannel, song: string) {
         }
     }
 }
-
-function getS3Url(key: string) {
-    const url = s3.getSignedUrl("getObject", {
-        Bucket: AWS.S3_BUCKET,
-        Key: key,
-        Expires: 60,
-    });
-    return url;
-}
-// Utility functions
-function getRandomInt(max: number) {
-    return Math.floor(Math.random() * Math.floor(max));
-}
-
-const getS3Files = async () => {
-    return new Promise((resolve, reject) => {
-        s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
-            if (err) reject();
-            data.Contents.forEach(function (file, index) {
-                let key = file.Key;
-                fileSet.set(
-                    key.replace(/(.wav)|(.mp3)/gm, "").toLowerCase(),
-                    key
-                );
-                fileMap.set(index, key);
-                s3Files.push(file);
-            });
-            resolve(true);
-        });
-    });
-};

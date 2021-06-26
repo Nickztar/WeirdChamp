@@ -8,7 +8,9 @@
         "prod": "nodemon -x ts-node ./src/index.ts || (sleep 10; touch ./src/index.ts)",
         "build": "tsc",
         "start": "tsc && node ./dist/src/index.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "watch": "nodemon -e ts -w ./src -x npm run watch:serve",
+        "watch:serve": "ts-node src/index.ts"
     },
     "author": "",
     "license": "ISC",
