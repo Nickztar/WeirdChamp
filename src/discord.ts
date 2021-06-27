@@ -8,7 +8,7 @@ import { default as DiscordButton } from "discord-buttons";
 import aws from "aws-sdk";
 import { getS3Files } from "../utils/s3Utils";
 import { PlayFromRandom, PlayRandom } from "../utils/soundUtils";
-import { AWS } from "../types/constants";
+import { AWS } from "../types/Constants";
 dotenv.config();
 
 aws.config.update({
