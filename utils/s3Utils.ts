@@ -1,17 +1,12 @@
 import { AWS } from "../types/Constants";
 import aws from "aws-sdk";
 import { IS3Params, PostRequest } from "../types/AwsTypes";
-
-aws.config.update({
-    region: AWS.REGION,
-    accessKeyId: process.env.S3_ID as string,
-    secretAccessKey: process.env.S3_KEY as string,
-});
-const s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
+import { s3 } from "../src/discord";
 
 export const getS3Files = async () => {
     return new Promise<aws.S3.Object[]>((resolve, reject) => {
         s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
+            console.log(err);
             if (err || !data) reject();
             const files: aws.S3.Object[] = [];
             data?.Contents?.forEach(function (file, index) {

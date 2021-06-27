@@ -6,13 +6,9 @@ import { prefix, regYoutube } from "../types/Constants";
 
 const queue = new Map<string, IQueueContruct>();
 
-export async function execute(
-    message: Message,
-    serverQueue: IQueueContruct,
-    find: boolean
-) {
+export async function execute(message: Message, find: boolean) {
     const args = message.content.split(" ");
-
+    const serverQueue = queue.get(message.guild.id);
     const voiceChannel = message.member.voice.channel;
     if (!voiceChannel)
         return message.channel.send(
@@ -82,7 +78,8 @@ export async function execute(
     }
 }
 
-export function skip(message: Message, serverQueue: IQueueContruct) {
+export function skip(message: Message) {
+    const serverQueue = queue.get(message.guild.id);
     if (!message.member.voice.channel)
         return message.channel.send(
             "Join a voice channel to skip the music! <:pepega:709781824771063879>"
@@ -97,7 +94,8 @@ export function skip(message: Message, serverQueue: IQueueContruct) {
     serverQueue.connection.dispatcher.end();
 }
 
-export function stop(message: Message, serverQueue: IQueueContruct) {
+export function stop(message: Message) {
+    const serverQueue = queue.get(message.guild.id);
     if (!message.member.voice.channel)
         return message.channel.send(
             "Join a voice channel to stop the music! <:pepega:709781824771063879>"
