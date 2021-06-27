@@ -96,7 +96,7 @@ client.on("message", async (message) => {
 
     if (command) {
         await command.execute(message, args);
-    } else {
+    } else if (message.content.startsWith(prefix)) {
         let string = "**My commands are: **```";
         commands.forEach((cmd, i) => {
             string += `${prefix + cmd.name}: ${cmd.description} ${
