@@ -30,9 +30,13 @@ export async function PlayRandom(channel: VoiceChannel) {
 export async function PlayFromRandom(channel: VoiceChannel, song: string) {
     if (IsReady) {
         try {
-            const connection = await channel.join();
             UpdateIsReady(false);
-            const file = s3Files.find((x) => x.Key.includes(song));
+            const file = s3Files.find((x) =>
+                x.Key.toLowerCase().includes(song)
+            );
+            if (file == undefined)
+                throw Error("Could not find song with that name...");
+            const connection = await channel.join();
             const url = getS3Url(file.Key);
             const dispatcher = connection.play(url, {
                 volume: 0.5,

@@ -120,8 +120,8 @@ app.get("/api/bot/specific/", async (req, res) => {
     }
 });
 app.post("/api/bot/specific/", async (req, res) => {
-    const soundID = req.query.soundID as string;
-    const channelID = req.query.channelID as string;
+    const soundID = req.body.soundID as string;
+    const channelID = req.body.channelID as string;
     const channel = await client.channels.fetch(channelID);
     if (channel instanceof VoiceChannel) {
         await PlayFromRandom(

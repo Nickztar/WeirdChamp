@@ -19,7 +19,11 @@ const command: Command = {
                 "No permission <:weird:668843974504742912>"
             );
         }
-        if (s3Files.find((x) => x.Key.includes(args[1])) != null) {
+        if (
+            s3Files.find((x) =>
+                x.Key.toLowerCase().includes(args[1].toLowerCase())
+            ) != null
+        ) {
             await PlayFromRandom(voiceChannel, args[1].toLowerCase());
             return;
         } else {
