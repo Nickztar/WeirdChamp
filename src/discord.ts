@@ -62,7 +62,7 @@ client.once("ready", async () => {
         commands.push(command);
     }
     client.user
-        .setActivity(`${prefix}weirdchamp`)
+        .setActivity(`${prefix}WeirdChamp`)
         .then((presence) =>
             console.log(`Activity set to ${presence.activities[0].name}`)
         )
