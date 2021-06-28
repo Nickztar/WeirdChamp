@@ -193,7 +193,9 @@ app.get("/api/bot/guilds", async (req, res) => {
                             ) {
                                 const mappedUser = {
                                     id: user.id,
-                                    name: user.member.nickname,
+                                    name:
+                                        user.member.nickname ??
+                                        user.member.displayName,
                                     picture: user.member.user.avatarURL(),
                                 };
                                 acc.push(mappedUser);
