@@ -6,7 +6,6 @@ import { s3 } from "../src/discord";
 export const getS3Files = async () => {
     return new Promise<aws.S3.Object[]>((resolve, reject) => {
         s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
-            console.log(err);
             if (err || !data) reject();
             const files: aws.S3.Object[] = [];
             data?.Contents?.forEach(function (file, index) {
