@@ -1,5 +1,5 @@
 import { VoiceChannel } from "discord.js";
-import { IsReady, s3Files, UpdateIsReady } from "../src/discord";
+import { client, IsReady, s3Files, UpdateIsReady } from "../src/discord";
 import { getS3Url } from "./s3Utils";
 import { getRandomInt } from "./generalUtils";
 
@@ -38,14 +38,16 @@ export async function PlayFromRandom(channel: VoiceChannel, song: string) {
                 throw Error("Could not find song with that name...");
             const connection = await channel.join();
             const url = getS3Url(file.Key);
+            await client.user.setActivity(`Playing: ${file.Key}`);
             const dispatcher = connection.play(url, {
                 volume: 0.5,
             });
             console.log(`${Date.now()} selected:` + file);
-            dispatcher.on("finish", () => {
+            dispatcher.on("finish", async () => {
                 console.log("Finished playing");
                 channel.leave();
                 setTimeout(() => UpdateIsReady(true), 2000);
+                await client.user.setActivity(`!WeirdChamp`);
             });
             dispatcher.on("error", (error) => console.error(error));
         } catch (err) {
