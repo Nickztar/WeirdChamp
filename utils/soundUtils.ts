@@ -11,7 +11,7 @@ export async function PlayRandom(channel: VoiceChannel) {
             const randNummer = getRandomInt(s3Files.length - 1);
             const file = s3Files[randNummer];
             const url = getS3Url(file.Key);
-            await client.user.setActivity(`Playing: ${file.Key}`);
+            await client.user.setActivity(`${file.Key}`);
             const dispatcher = connection.play(url, {
                 volume: 0.5,
             });
@@ -46,7 +46,7 @@ export async function PlayFromRandom(channel: VoiceChannel, song: string) {
                 throw Error("Could not find song with that name...");
             const connection = await channel.join();
             const url = getS3Url(file.Key);
-            await client.user.setActivity(`Playing: ${file.Key}`);
+            await client.user.setActivity(`${file.Key}`);
             const dispatcher = connection.play(url, {
                 volume: 0.5,
             });
