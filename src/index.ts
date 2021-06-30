@@ -9,8 +9,8 @@ import aws from "aws-sdk";
 import { AWS, ExpressConst } from "../types/Constants";
 import { asyncFilter } from "../utils/asyncFilter";
 import { getS3Url, getS3Files, getSignedPost } from "../utils/s3Utils";
-import { client, s3Files, SetS3Files } from "./discord";
-import { PlayFromRandom, PlayRandom } from "../utils/soundUtils";
+import { client } from "./discord";
+import { PlayFromRandom, PlayRandom, QuerySounds } from "../utils/soundUtils";
 
 // const client = new Client();
 dotenv.config({ encoding: "UTF-8" });
@@ -99,12 +99,12 @@ app.get("/api/bot/random/:id", async (req, res) => {
 });
 
 app.get("/api/bot/fetchSounds", async (req, res) => {
-    const newFiles = await getS3Files();
-    const update: aws.S3.Object[] = [];
-    for (const s3File of newFiles) {
-        update.push(s3File);
-    }
-    SetS3Files(update);
+    // const newFiles = await getS3Files();
+    // const update: aws.S3.Object[] = [];
+    // for (const s3File of newFiles) {
+    //     update.push(s3File);
+    // }
+    // SetS3Files(update);
     res.send(true);
 });
 
@@ -135,7 +135,7 @@ app.post("/api/bot/specific/", async (req, res) => {
 });
 
 app.get("/api/bot/files", async (req, res) => {
-    res.send(s3Files);
+    res.send(await QuerySounds());
 });
 
 app.post("/api/bot/teams", async (req, res) => {

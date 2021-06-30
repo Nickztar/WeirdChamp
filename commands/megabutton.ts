@@ -1,16 +1,17 @@
 import { Message } from "discord.js";
 import { Command } from "../types/DiscordTypes";
-import { DiscordButton, s3Files } from "../src/discord";
+import { DiscordButton } from "../src/discord";
+import { QuerySounds } from "../utils/soundUtils";
 // This will complain if you don't provide the right types for each property
 const command: Command = {
     name: "megabutton",
     description: "Send all sounds as buttons!",
-    execute: (message: Message) => {
+    execute: async (message: Message) => {
         const soundButtons: Array<DiscordButton.MessageButton> = [];
-        const fileArr = [...s3Files];
+        const fileArr = await QuerySounds();
         fileArr.sort((a, b) => {
-            const nameA = a.Key.toLowerCase();
-            const nameB = b.Key.toLowerCase();
+            const nameA = a.DisplayName.toLowerCase();
+            const nameB = b.DisplayName.toLowerCase();
             if (nameA < nameB)
                 // sort string ascending
                 return -1;
@@ -20,8 +21,8 @@ const command: Command = {
         fileArr.forEach((file) => {
             const button = new DiscordButton.MessageButton()
                 .setStyle("blurple") // default: blurple
-                .setLabel(file.Key.replace(/(.wav)|(.mp3)/gm, "")) // default: NO_LABEL_PROVIDED
-                .setID(`play_${file.Key.replace(/(.wav)|(.mp3)/gm, "")}`); // note: if you use the style "url" you must provide url using .setURL('https://example.com')
+                .setLabel(file.DisplayName) // default: NO_LABEL_PROVIDED
+                .setID(`play_${file.key}`); // note: if you use the style "url" you must provide url using .setURL('https://example.com')
             soundButtons.push(button);
         });
         let buttonCache: Array<DiscordButton.MessageButton> = [];

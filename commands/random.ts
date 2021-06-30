@@ -1,5 +1,4 @@
 import { Message } from "discord.js";
-import { s3Files } from "../src/discord";
 import { Command } from "../types/DiscordTypes";
 import { PlayFromRandom, PlayRandom } from "../utils/soundUtils";
 // This will complain if you don't provide the right types for each property
@@ -19,12 +18,8 @@ const command: Command = {
                 "No permission <:weird:668843974504742912>"
             );
         }
-        if (
-            s3Files.find((x) =>
-                x.Key.toLowerCase().includes(args[1].toLowerCase())
-            ) != null
-        ) {
-            await PlayFromRandom(voiceChannel, args[1].toLowerCase());
+        if (args.length != 0) {
+            await PlayFromRandom(voiceChannel, args[1]);
             return;
         } else {
             await PlayRandom(voiceChannel);

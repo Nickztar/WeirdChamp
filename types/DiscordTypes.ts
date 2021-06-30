@@ -8,11 +8,12 @@ import {
 } from "discord.js";
 
 export interface Command {
-    name: string
-    description: string
+    name: string;
+    description: string;
+    isDisabled?: boolean;
     // Making `args` optional
     execute: (message: Message, args?: string[]) => any;
-  }
+}
 
 export interface IQueueContruct {
     textChannel: TextChannel | DMChannel | NewsChannel;
