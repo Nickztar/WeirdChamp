@@ -11,7 +11,11 @@ export async function SyncS3() {
     const addedSounds = [];
     for (const file of s3Files) {
         const existingFile: SoundType = await Sound.findOne({ key: file.Key });
-        if (existingFile) continue;
+        if (existingFile) {
+            existingFile.LastModified = file.LastModified;
+            await existingFile.save();
+            continue;
+        }
         const displayName = file.Key.replace(/(.wav)|(.mp3)/gm, "").replace(
             /_/gm,
             " "
@@ -22,8 +26,8 @@ export async function SyncS3() {
             DisplayName: displayName,
             key: file.Key,
             Size: file.Size,
-            NameHash: await sha256(displayName),
-            LastModified: Date.now(),
+            NameHash: sha256(displayName),
+            LastModified: file.LastModified,
         });
 
         const sound = await newSound.save();
