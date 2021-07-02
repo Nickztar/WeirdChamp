@@ -166,56 +166,63 @@ app.post("/api/bot/teams", async (req, res) => {
 });
 
 app.get("/api/bot/guilds", async (req, res) => {
-    const userId = req.query.DiscordID as string;
+    try {
+        const userId = req.query.DiscordID as string;
 
-    const guilds = await asyncFilter(
-        [...client.guilds.cache.values()],
-        async (guild: Guild) => {
-            const user = await guild.members.fetch(userId);
-            return user != null;
-        }
-    );
-    const mappedGuilds = guilds.map((guild) => {
-        return {
-            id: guild.id,
-            name: guild.name,
-            icon: guild.iconURL(),
-            channels: guild.channels.cache.reduce((filtered, channel) => {
-                if (
-                    channel.type == "voice" &&
-                    channel.id != guild.afkChannelID
-                ) {
-                    const currentVoiceUsers = guild.voiceStates.cache.reduce(
-                        (acc, user) => {
-                            if (
-                                user.channelID == channel.id &&
-                                !user.member.user.bot
-                            ) {
-                                const mappedUser = {
-                                    id: user.id,
-                                    name:
-                                        user.member.nickname ??
-                                        user.member.displayName,
-                                    picture: user.member.user.avatarURL(),
-                                };
-                                acc.push(mappedUser);
-                            }
-                            return acc;
-                        },
-                        []
-                    );
-                    const mappedChannel = {
-                        id: channel.id,
-                        name: channel.name,
-                        currentUsers: currentVoiceUsers,
-                    };
-                    filtered.push(mappedChannel);
-                }
-                return filtered;
-            }, []),
-        };
-    });
-    res.send(mappedGuilds);
+        const guilds = await asyncFilter(
+            //actually no need to async filter since fetch is sketchy
+            [...client.guilds.cache.values()],
+            async (guild: Guild) => {
+                const user = guild.members.cache.find(
+                    (x) => x.user.id == userId
+                );
+                return user != null;
+            }
+        );
+
+        const mappedGuilds = guilds.map((guild) => {
+            return {
+                id: guild.id,
+                name: guild.name,
+                icon: guild.iconURL(),
+                channels: guild.channels.cache.reduce((filtered, channel) => {
+                    if (
+                        channel.type == "voice" &&
+                        channel.id != guild.afkChannelID
+                    ) {
+                        const currentVoiceUsers =
+                            guild.voiceStates.cache.reduce((acc, user) => {
+                                if (
+                                    user.channelID == channel.id &&
+                                    !user.member.user.bot
+                                ) {
+                                    const mappedUser = {
+                                        id: user.id,
+                                        name:
+                                            user.member.nickname ??
+                                            user.member.displayName,
+                                        picture: user.member.user.avatarURL(),
+                                    };
+                                    acc.push(mappedUser);
+                                }
+                                return acc;
+                            }, []);
+                        const mappedChannel = {
+                            id: channel.id,
+                            name: channel.name,
+                            currentUsers: currentVoiceUsers,
+                        };
+                        filtered.push(mappedChannel);
+                    }
+                    return filtered;
+                }, []),
+            };
+        });
+        res.send(mappedGuilds);
+    } catch (err) {
+        console.log(err);
+        res.send([]);
+    }
 });
 
 app.get("/api/bot/users/:guildId/:channelId", async (req, res) => {
