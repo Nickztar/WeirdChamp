@@ -170,12 +170,16 @@ app.get("/api/bot/guilds", async (req, res) => {
         const userId = req.query.DiscordID as string;
 
         const guilds = await asyncFilter(
-            //actually no need to async filter since fetch is sketchy
             [...client.guilds.cache.values()],
             async (guild: Guild) => {
-                const user = guild.members.cache.find(
-                    (x) => x.user.id == userId
-                );
+                const user = await guild.members
+                    .fetch({
+                        user: userId,
+                        cache: true,
+                    })
+                    .catch(() => {
+                        return null;
+                    });
                 return user != null;
             }
         );
