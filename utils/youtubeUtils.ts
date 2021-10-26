@@ -1,12 +1,13 @@
-import { Message, Guild } from "discord.js";
+import { Message, Guild, VoiceChannel } from "discord.js";
 import yts from "yt-search";
 import ytdl from "ytdl-core";
 import { IQueueContruct, IYoutubeSong } from "../types/DiscordTypes";
 import { prefix, regYoutube } from "../types/Constants";
+import ytpl from "ytpl";
 
 const queue = new Map<string, IQueueContruct>();
-
-export async function execute(message: Message, find: boolean) {
+export enum PlayType { Play, Search, Playlist };
+export async function execute(message: Message, type: PlayType) {
     const args = message.content.split(" ");
     const serverQueue = queue.get(message.guild.id);
     const voiceChannel = message.member.voice.channel;
@@ -20,8 +21,13 @@ export async function execute(message: Message, find: boolean) {
             "No permission <:weird:668843974504742912>"
         );
     }
-    let song;
-    if (find) {
+
+    if (type == PlayType.Playlist) {
+        return executePlaylist(args, serverQueue, voiceChannel, message);
+    }
+
+    let song: IYoutubeSong;
+    if (type == PlayType.Search) {
         const search = message.content.replace(`${prefix}search `, "");
         const finds = await yts(search.toLowerCase());
         const videos = finds.videos;
@@ -78,6 +84,66 @@ export async function execute(message: Message, find: boolean) {
     }
 }
 
+async function executePlaylist(args: string[], serverQueue: IQueueContruct, voiceChannel: VoiceChannel, message: Message) {
+    const playlist = args[1];
+    const isUrl = playlist.includes("http");
+    let playlistId = "";
+    if (isUrl){
+        const fetchedId = await ytpl.getPlaylistID(playlist);
+        playlistId = fetchedId;
+    } else {
+        const valid = ytpl.validateID(playlist);
+        if (!valid) {
+            return message.channel.send(
+                "This is not valid fucking youtube playlist ID!"
+            );
+
+            }
+        playlistId = playlist;
+    }
+    //fetch playlist from id
+    const playlistInfo = await ytpl(playlistId);
+    const videos = playlistInfo.items;
+    const songs: IYoutubeSong[] = [];
+    for (const video of videos) {
+        const songInfo = await ytdl.getInfo(video.url);
+        songs.push({
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
+        });
+    }
+    if (serverQueue) {
+        serverQueue.continuation = playlistInfo.continuation;
+        serverQueue.songs = [...serverQueue.songs, ...songs];
+        return message.channel.send(
+            `Added ${songs.length} songs to queue!`
+        );
+    } else {
+        const queueContruct: IQueueContruct = {
+            textChannel: message.channel,
+            voiceChannel: voiceChannel,
+            connection: null,
+            songs: songs,
+            volume: 5,
+            playing: true,
+            continuation: playlistInfo.continuation
+        };
+        queue.set(message.guild.id, queueContruct);
+        try {
+                const connection = await voiceChannel.join();
+                queueContruct.connection = connection;
+                play(message.guild, queueContruct.songs[0]);
+        } catch (err) {
+            console.log(err);
+            queue.delete(message.guild.id);
+            return message.channel.send(err);
+        }
+        return message.channel.send(
+            `Added ${songs.length} songs to queue!`
+        );
+    }
+}
+
 export function skip(message: Message) {
     const serverQueue = queue.get(message.guild.id);
     if (!message.member.voice.channel)
@@ -110,14 +176,21 @@ export function stop(message: Message) {
 
 export function play(guild: Guild, song: IYoutubeSong) {
     const serverQueue = queue.get(guild.id);
+    //We ran out of songs in queue but we have continuation from playlist
+    if (!song && serverQueue.continuation) {
+        continuePlaylist(serverQueue);
+        return;
+    }
+    //Ran out and there is no continuation
     if (!song) {
         serverQueue.voiceChannel.leave();
         queue.delete(guild.id);
         return;
     }
+    //Not valid song, check the next one if its valid?
     if (song.url == null) {
-        serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
+        serverQueue.songs.shift();
+        play(guild, serverQueue.songs[0]);
         return;
     }
 
@@ -128,10 +201,32 @@ export function play(guild: Guild, song: IYoutubeSong) {
             play(guild, serverQueue.songs[0]);
         })
         .on("error", (error) => {
+            //Something went wrong, handle this somehow?
             console.error(error);
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
     serverQueue.textChannel.send(
         `Start playing: **${song.title}** <:pog:710437255231176764>`
+    );
+}
+
+async function continuePlaylist(serverQueue: IQueueContruct) {
+    const continuationRes = await ytpl.continueReq(serverQueue.continuation);
+    const videos = continuationRes.items;
+    const songs: IYoutubeSong[] = [];
+    for (const video of videos) {
+        const songInfo = await ytdl.getInfo(video.url);
+        songs.push({
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
+        });
+    }
+    serverQueue.continuation = continuationRes.continuation;
+    serverQueue.songs = [...songs, ...serverQueue.songs];
+
+    play(serverQueue.voiceChannel.guild, serverQueue.songs[0]);
+    
+    return serverQueue.textChannel.send(
+        `Ran out of songs, fetched ${songs.length} new songs to queue!`
     );
 }

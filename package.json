@@ -32,7 +32,8 @@
         "nodemon": "^2.0.4",
         "opusscript": "0.0.7",
         "yt-search": "^1.1.2",
-        "ytdl-core": "^4.8.2"
+        "ytdl-core": "^4.8.2",
+        "ytpl": "^2.2.3"
     },
     "devDependencies": {
         "@types/cors": "^2.8.10",

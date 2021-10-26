@@ -6,6 +6,7 @@ import {
     VoiceChannel,
     VoiceConnection,
 } from "discord.js";
+import { Continuation } from "ytpl";
 
 export interface Command {
     name: string;
@@ -22,6 +23,7 @@ export interface IQueueContruct {
     songs: IYoutubeSong[];
     volume: number;
     playing: boolean;
+    continuation?: Continuation;
 }
 
 export interface IYoutubeSong {
