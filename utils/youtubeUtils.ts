@@ -17,14 +17,10 @@ export async function execute(message: Message, type: PlayType) {
     const serverQueue = queue.get(message.guild.id);
     const voiceChannel = message.member.voice.channel;
     if (!voiceChannel)
-        return message.channel.send(
-            "You're not in a voice channel! <:weird:668843974504742912>"
-        );
+        return message.channel.send("You're not in a voice channel!");
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
-        return message.channel.send(
-            "No permission <:weird:668843974504742912>"
-        );
+        return message.channel.send("No permission");
     }
 
     if (type == PlayType.Playlist) {
@@ -38,9 +34,7 @@ export async function execute(message: Message, type: PlayType) {
         const videos = finds.videos;
         const songInfo = videos[0];
         if (!songInfo) {
-            return message.channel.send(
-                `Couldn't find ${search} <:weird:668843974504742912>`
-            );
+            return message.channel.send(`Couldn't find ${search}`);
         }
         song = {
             title: songInfo.title,
@@ -49,7 +43,7 @@ export async function execute(message: Message, type: PlayType) {
     } else {
         if (!args[1].match(regYoutube)) {
             return message.channel.send(
-                "This is not valid fucking youtube link! <:weird:668843974504742912>"
+                "This is not valid fucking youtube link!"
             );
         }
         const songInfo = await ytdl.getInfo(args[1]);
@@ -84,7 +78,7 @@ export async function execute(message: Message, type: PlayType) {
     } else {
         serverQueue.songs.push(song);
         return message.channel.send(
-            `${song.title} has been added to the queue! <:Happy:711247709729718312>`
+            `${song.title} has been added to the queue!`
         );
     }
 }
@@ -110,15 +104,20 @@ async function executePlaylist(
         }
         playlistId = playlist;
     }
+    let newMessage = await message.channel.send(
+        "Starting to process playlist..."
+    );
     //fetch playlist from id
-    const playlistInfo = await ytpl(playlistId);
+    const playlistInfo = await ytpl(playlistId, { pages: 1 });
+    newMessage = await newMessage.edit(
+        `Finished processing ${playlistInfo.title}`
+    );
     const videos = playlistInfo.items;
     const songs: IYoutubeSong[] = [];
     for (const video of videos) {
-        const songInfo = await ytdl.getInfo(video.url);
         songs.push({
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url,
+            title: video.title,
+            url: video.url,
         });
     }
     if (serverQueue) {
@@ -150,69 +149,91 @@ async function executePlaylist(
 }
 
 export function skip(message: Message) {
-    const serverQueue = queue.get(message.guild.id);
-    if (!message.member.voice.channel)
-        return message.channel.send(
-            "Join a voice channel to skip the music! <:pepega:709781824771063879>"
-        );
-    if (!serverQueue)
-        return message.channel.send(
-            "No song to skip! <:pepega:709781824771063879>"
-        );
-    if (!serverQueue.connection.dispatcher) {
-        return;
+    try {
+        const serverQueue = queue.get(message.guild.id);
+        if (!message.member.voice.channel)
+            return message.channel.send(
+                "Join a voice channel to skip the music!"
+            );
+        if (!serverQueue) return message.channel.send("No song to skip!");
+        if (!serverQueue.connection.dispatcher) {
+            return;
+        }
+        serverQueue.connection.dispatcher.end();
+    } catch (err) {
+        console.log(err);
+        return message.channel.send("Something went wrong");
     }
-    serverQueue.connection.dispatcher.end();
 }
 
 export function stop(message: Message) {
-    const serverQueue = queue.get(message.guild.id);
-    if (!message.member.voice.channel)
-        return message.channel.send(
-            "Join a voice channel to stop the music! <:pepega:709781824771063879>"
-        );
-    if (!serverQueue)
-        return message.channel.send(
-            "Something went fucking wrong! <:pepelaugh:699711830523773040>"
-        );
-    serverQueue.songs = [];
-    serverQueue.connection.dispatcher.end();
+    try {
+        const serverQueue = queue.get(message.guild.id);
+        if (!message.member.voice.channel)
+            return message.channel.send(
+                "Join a voice channel to stop the music!"
+            );
+        if (!serverQueue)
+            return message.channel.send("Something went fucking wrong!");
+        serverQueue.songs = [];
+        serverQueue.connection.dispatcher.end();
+    } catch (err) {
+        console.log(err);
+        return message.channel.send("Something went wrong");
+    }
 }
 
 export function play(guild: Guild, song: IYoutubeSong) {
+    if (!queue.has(guild.id)) return;
     const serverQueue = queue.get(guild.id);
-    //We ran out of songs in queue but we have continuation from playlist
-    if (!song && serverQueue.continuation) {
-        continuePlaylist(serverQueue);
-        return;
-    }
-    //Ran out and there is no continuation
-    if (!song) {
-        serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
-        return;
-    }
-    //Not valid song, check the next one if its valid?
-    if (song.url == null) {
-        serverQueue.songs.shift();
-        play(guild, serverQueue.songs[0]);
-        return;
-    }
-
-    const dispatcher = serverQueue.connection
-        .play(ytdl(song.url))
-        .on("finish", () => {
+    try {
+        //We ran out of songs in queue but we have continuation from playlist
+        if (!song && serverQueue.continuation) {
+            continuePlaylist(serverQueue);
+            return;
+        }
+        //Ran out and there is no continuation
+        if (!song) {
+            serverQueue.voiceChannel.leave();
+            queue.delete(guild.id);
+            return;
+        }
+        //Not valid song, check the next one if its valid?
+        if (song.url == null) {
             serverQueue.songs.shift();
             play(guild, serverQueue.songs[0]);
-        })
-        .on("error", (error) => {
-            //Something went wrong, handle this somehow?
-            console.error(error);
-        });
-    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(
-        `Start playing: **${song.title}** <:pog:710437255231176764>`
-    );
+            return;
+        }
+
+        const dispatcher = serverQueue.connection
+            .play(
+                ytdl(song.url, { filter: "audioonly", quality: "highestaudio" })
+            )
+            .on("finish", () => {
+                serverQueue.songs.shift();
+                play(guild, serverQueue.songs[0]);
+            })
+            .on("error", (error) => {
+                //Something went wrong, handle this somehow?
+                console.error(error);
+                serverQueue.songs.shift();
+                play(guild, serverQueue.songs[0]);
+            });
+        dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+        serverQueue.textChannel.send(`Start playing: **${song.title}**`);
+    } catch (err) {
+        console.log(err);
+        if (!song && serverQueue.continuation) {
+            continuePlaylist(serverQueue);
+            return;
+        }
+        //Ran out and there is no continuation
+        if (!song) {
+            serverQueue.voiceChannel.leave();
+            queue.delete(guild.id);
+            return;
+        }
+    }
 }
 
 async function continuePlaylist(serverQueue: IQueueContruct) {
