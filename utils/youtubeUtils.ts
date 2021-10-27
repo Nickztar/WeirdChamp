@@ -2,11 +2,16 @@ import { Message, Guild, VoiceChannel } from "discord.js";
 import yts from "yt-search";
 import ytdl from "ytdl-core";
 import { IQueueContruct, IYoutubeSong } from "../types/DiscordTypes";
-import { prefix, regYoutube } from "../types/Constants";
+import { regYoutube } from "../types/Constants";
 import ytpl from "ytpl";
+import * as config from "../bot.config";
 
 const queue = new Map<string, IQueueContruct>();
-export enum PlayType { Play, Search, Playlist };
+export enum PlayType {
+    Play,
+    Search,
+    Playlist,
+}
 export async function execute(message: Message, type: PlayType) {
     const args = message.content.split(" ");
     const serverQueue = queue.get(message.guild.id);
@@ -28,7 +33,7 @@ export async function execute(message: Message, type: PlayType) {
 
     let song: IYoutubeSong;
     if (type == PlayType.Search) {
-        const search = message.content.replace(`${prefix}search `, "");
+        const search = message.content.replace(`${config.PREFIX}search `, "");
         const finds = await yts(search.toLowerCase());
         const videos = finds.videos;
         const songInfo = videos[0];
@@ -84,11 +89,16 @@ export async function execute(message: Message, type: PlayType) {
     }
 }
 
-async function executePlaylist(args: string[], serverQueue: IQueueContruct, voiceChannel: VoiceChannel, message: Message) {
+async function executePlaylist(
+    args: string[],
+    serverQueue: IQueueContruct,
+    voiceChannel: VoiceChannel,
+    message: Message
+) {
     const playlist = args[1];
     const isUrl = playlist.includes("http");
     let playlistId = "";
-    if (isUrl){
+    if (isUrl) {
         const fetchedId = await ytpl.getPlaylistID(playlist);
         playlistId = fetchedId;
     } else {
@@ -97,8 +107,7 @@ async function executePlaylist(args: string[], serverQueue: IQueueContruct, voic
             return message.channel.send(
                 "This is not valid fucking youtube playlist ID!"
             );
-
-            }
+        }
         playlistId = playlist;
     }
     //fetch playlist from id
@@ -115,9 +124,7 @@ async function executePlaylist(args: string[], serverQueue: IQueueContruct, voic
     if (serverQueue) {
         serverQueue.continuation = playlistInfo.continuation;
         serverQueue.songs = [...serverQueue.songs, ...songs];
-        return message.channel.send(
-            `Added ${songs.length} songs to queue!`
-        );
+        return message.channel.send(`Added ${songs.length} songs to queue!`);
     } else {
         const queueContruct: IQueueContruct = {
             textChannel: message.channel,
@@ -126,21 +133,19 @@ async function executePlaylist(args: string[], serverQueue: IQueueContruct, voic
             songs: songs,
             volume: 5,
             playing: true,
-            continuation: playlistInfo.continuation
+            continuation: playlistInfo.continuation,
         };
         queue.set(message.guild.id, queueContruct);
         try {
-                const connection = await voiceChannel.join();
-                queueContruct.connection = connection;
-                play(message.guild, queueContruct.songs[0]);
+            const connection = await voiceChannel.join();
+            queueContruct.connection = connection;
+            play(message.guild, queueContruct.songs[0]);
         } catch (err) {
             console.log(err);
             queue.delete(message.guild.id);
             return message.channel.send(err);
         }
-        return message.channel.send(
-            `Added ${songs.length} songs to queue!`
-        );
+        return message.channel.send(`Added ${songs.length} songs to queue!`);
     }
 }
 
@@ -225,7 +230,7 @@ async function continuePlaylist(serverQueue: IQueueContruct) {
     serverQueue.songs = [...songs, ...serverQueue.songs];
 
     play(serverQueue.voiceChannel.guild, serverQueue.songs[0]);
-    
+
     return serverQueue.textChannel.send(
         `Ran out of songs, fetched ${songs.length} new songs to queue!`
     );

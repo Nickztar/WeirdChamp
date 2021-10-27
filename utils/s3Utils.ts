@@ -4,6 +4,7 @@ import { IS3Params, PostRequest } from "../types/AwsTypes";
 import { s3 } from "../src/discord";
 
 export const getS3Files = async () => {
+    if (s3 == null) return;
     return new Promise<aws.S3.Object[]>((resolve, reject) => {
         s3.listObjects({ Bucket: AWS.S3_BUCKET }, function (err, data) {
             if (err || !data) reject();
@@ -17,6 +18,7 @@ export const getS3Files = async () => {
 };
 
 export function getS3Url(key: string) {
+    if (s3 == null) return;
     const url = s3.getSignedUrl("getObject", {
         Bucket: AWS.S3_BUCKET,
         Key: key,
@@ -26,6 +28,7 @@ export function getS3Url(key: string) {
 }
 
 export const getSignedPost = async (s3Params: IS3Params) => {
+    if (s3 == null) return;
     return new Promise<PostRequest>((resolve, reject) => {
         s3.getSignedUrl("putObject", s3Params, (err, data) => {
             if (err) {

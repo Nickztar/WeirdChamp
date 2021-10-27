@@ -4,9 +4,10 @@ import { getS3Url } from "./s3Utils";
 import dbConnect from "./dbConnect";
 import Sound, { SoundType } from "../models/sounds";
 import dbDisconnect from "./dbDisconnect";
+import * as config from "../bot.config";
 
 export async function PlayRandom(channel: VoiceChannel) {
-    if (IsReady) {
+    if (IsReady && config.USE_WEIRDCHAMP) {
         try {
             await dbConnect();
             UpdateIsReady(false);
@@ -45,7 +46,7 @@ export async function PlayRandom(channel: VoiceChannel) {
     }
 }
 export async function PlayFromRandom(channel: VoiceChannel, song: string) {
-    if (IsReady) {
+    if (IsReady && config.USE_WEIRDCHAMP) {
         try {
             await dbConnect();
             UpdateIsReady(false);
@@ -86,6 +87,7 @@ export async function PlayFromRandom(channel: VoiceChannel, song: string) {
 }
 
 export async function QuerySounds() {
+    if (!config.USE_AWS) return;
     await dbConnect();
     const availableSounds: SoundType[] = await Sound.find({});
     availableSounds.sort((a, b) => {

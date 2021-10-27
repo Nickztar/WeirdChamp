@@ -1,10 +1,12 @@
 import { Message } from "discord.js";
 import { Command } from "../types/DiscordTypes";
 import { DiscordButton } from "../src/discord";
+import * as config from "../bot.config";
 // This will complain if you don't provide the right types for each property
 const command: Command = {
     name: "button",
     description: "Gives you a button to click for a random sound!",
+    isDisabled: !config.USE_WEIRDCHAMP,
     execute: (message: Message) => {
         const button = new DiscordButton.MessageButton()
             .setStyle("blurple") // default: blurple

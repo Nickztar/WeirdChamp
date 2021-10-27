@@ -1,19 +1,20 @@
+import dotenv from "dotenv";
+dotenv.config(); //This has to be done as the first thing before any imports
+
 import { Guild, VoiceChannel } from "discord.js";
 import ytdl from "ytdl-core";
 import express from "express";
 import cors from "cors";
 import { MoveModel } from "../types/DiscordTypes";
-import dotenv from "dotenv";
 import bodyParser from "body-parser";
-import aws from "aws-sdk";
 import { AWS, ExpressConst } from "../types/Constants";
 import { asyncFilter } from "../utils/asyncFilter";
-import { getS3Url, getS3Files, getSignedPost } from "../utils/s3Utils";
+import { getS3Url, getSignedPost } from "../utils/s3Utils";
 import { client } from "./discord";
 import { PlayFromRandom, PlayRandom, QuerySounds } from "../utils/soundUtils";
+import * as config from "../bot.config";
 
 // const client = new Client();
-dotenv.config({ encoding: "UTF-8" });
 const app = express();
 // disbut(client);
 
@@ -245,6 +246,6 @@ app.get("/api/bot/users/:guildId/:channelId", async (req, res) => {
     res.status(200).json(mappedUsers);
 });
 
-const port = process.env.PORT || 3030;
+const port = config.PORT;
 
 app.listen(port, () => console.log("API running" + port));

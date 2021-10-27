@@ -1,41 +1,42 @@
+import dotenv from "dotenv";
+dotenv.config(); //This has to be done as the first thing before any imports
+
 import { Client, VoiceChannel } from "discord.js";
 import { glob } from "glob"; // included by discord.js
 import { promisify } from "util"; // Included by default
 import { Command } from "../types/DiscordTypes";
 import path from "path";
-import dotenv from "dotenv";
 import { default as DiscordButton } from "discord-buttons";
 import aws from "aws-sdk";
 import { PlayFromRandom, PlayRandom } from "../utils/soundUtils";
 import { AWS } from "../types/Constants";
-dotenv.config();
-
-aws.config.update({
-    region: AWS.REGION,
-    accessKeyId: process.env.S3_ID as string,
-    secretAccessKey: process.env.S3_KEY as string,
-});
-const s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
+import * as config from "../bot.config";
+let s3: aws.S3 | null;
+if (config.USE_AWS) {
+    aws.config.update({
+        region: AWS.REGION,
+        accessKeyId: config.S3_ID as string,
+        secretAccessKey: config.S3_KEY as string,
+    });
+    s3 = new aws.S3({ apiVersion: AWS.API_VERSION });
+}
 
 // Make `glob` return a promise
 const globPromise = promisify(glob);
 
 const commands: Command[] = [];
 const client = new Client();
-client.login(process.env.DISCORD_KEY);
+client.login(config.DISCORD_KEY);
 DiscordButton(client);
 
 //States?
 let IsReady: boolean = false;
-let weirdchampStatus: boolean = true;
 const UpdateIsReady = (value: boolean) => {
     IsReady = value;
 };
 
 client.once("ready", async () => {
     // Load all JavaScript / TypeScript files so it works properly after compiling
-    // Replace `test` with "await globPromise(`${__dirname}/commands/*.{.js,.ts}`)"
-    // I just did this to fix SO's syntax highlighting!
     const commandsPath = path.join(__dirname, `../commands/*.ts`);
     const commandFiles = await globPromise(commandsPath);
 
@@ -51,7 +52,7 @@ client.once("ready", async () => {
         if (!command.isDisabled) commands.push(command);
     }
     client.user
-        .setActivity(`${prefix}WeirdChamp`)
+        .setActivity(`${config.PREFIX}${config.PRESENCE}`)
         .then((presence) =>
             console.log(`Activity set to ${presence.activities[0].name}`)
         )
@@ -60,15 +61,12 @@ client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-const prefix = "!";
-
 client.on("message", async (message) => {
     // Prevent the bot from replying to itself or other bots
     if (message.author.bot) return; // Stops replying to own commands
     if (message.channel.type !== "text") return; // Stops crash on PM
-    if (message.channel.name == "simcraftbot") return;
 
-    if (weirdchampStatus) {
+    if (config.USE_WEIRDCHAMP) {
         const weirdchamp = message.guild.emojis.cache.find(
             (emoji) => emoji.name === "pepehehe"
         );
@@ -78,17 +76,17 @@ client.on("message", async (message) => {
     }
 
     const [commandName, ...args] = message.content
-        .slice(prefix.length)
+        .slice(config.PREFIX.length)
         .split(/ +/);
 
     const command = commands.find((c) => c.name === commandName);
 
     if (command) {
         await command.execute(message, args);
-    } else if (message.content.startsWith(prefix)) {
+    } else if (message.content.startsWith(config.PREFIX)) {
         let string = "**My commands are: **```";
         commands.forEach((cmd, i) => {
-            string += `${prefix + cmd.name}: ${cmd.description} ${
+            string += `${config.PREFIX + cmd.name}: ${cmd.description} ${
                 i == commands.length - 1 ? "" : "\n"
             }`;
         });
@@ -97,37 +95,39 @@ client.on("message", async (message) => {
     }
 });
 
-//@ts-ignore
-client.on("clickButton", async (button) => {
-    const channel = await client.channels.fetch("621035571057524737");
-    const isVoice = channel instanceof VoiceChannel;
-    if (button.id === "play_random") {
-        if (!channel || !isVoice)
-            return button.channel.send(
-                "You're not in a voice channel! <:weird:668843974504742912>"
-            );
-        await PlayRandom(channel as VoiceChannel);
-        await button.defer();
-    } else {
+if (!config.USE_WEIRDCHAMP) {
+    //@ts-ignore
+    client.on("clickButton", async (button) => {
         const channel = await client.channels.fetch("621035571057524737");
-        const fileName = button.id.replace("play_", "");
-        if (isVoice) {
-            await PlayFromRandom(channel as VoiceChannel, fileName);
+        const isVoice = channel instanceof VoiceChannel;
+        if (button.id === "play_random") {
+            if (!channel || !isVoice)
+                return button.channel.send(
+                    "You're not in a voice channel! <:weird:668843974504742912>"
+                );
+            await PlayRandom(channel as VoiceChannel);
+            await button.defer();
+        } else {
+            const channel = await client.channels.fetch("621035571057524737");
+            const fileName = button.id.replace("play_", "");
+            if (isVoice) {
+                await PlayFromRandom(channel as VoiceChannel, fileName);
+            }
+            await button.defer();
         }
-        await button.defer();
-    }
-});
+    });
 
-client.on("voiceStateUpdate", async (oldMember, newMember) => {
-    const newUserChannel = newMember.channel;
-    const oldUserChannel = oldMember.channel;
-    if (newMember.id != process.env.CLIENT_ID && IsReady) {
-        if (newUserChannel !== null) {
-            if (oldUserChannel != newUserChannel) {
-                await PlayRandom(newUserChannel);
+    client.on("voiceStateUpdate", async (oldMember, newMember) => {
+        const newUserChannel = newMember.channel;
+        const oldUserChannel = oldMember.channel;
+        if (newMember.id != config.CLIENT_ID && IsReady) {
+            if (newUserChannel !== null) {
+                if (oldUserChannel != newUserChannel) {
+                    await PlayRandom(newUserChannel);
+                }
             }
         }
-    }
-});
+    });
+}
 
 export { DiscordButton, IsReady, UpdateIsReady, client, s3 };

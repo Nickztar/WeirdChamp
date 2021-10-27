@@ -16,6 +16,5 @@ export const ExpressConst = {
     ],
 };
 
-export const prefix = "!"; // Should be in DB probably, persist though restarts
 export const regYoutube =
     /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?$/;

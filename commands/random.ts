@@ -1,9 +1,11 @@
 import { Message } from "discord.js";
+import * as config from "../bot.config";
 import { Command } from "../types/DiscordTypes";
 import { PlayFromRandom, PlayRandom } from "../utils/soundUtils";
 // This will complain if you don't provide the right types for each property
 const command: Command = {
     name: "random",
+    isDisabled: !config.USE_WEIRDCHAMP,
     description: "Plays a random sound, or specific if sent!",
     execute: async (message: Message) => {
         const voiceChannel = message.member.voice.channel;

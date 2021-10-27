@@ -3,8 +3,10 @@ import dbConnect from "./../utils/dbConnect";
 import { sha256 } from "./../utils/hash";
 import Sound, { SoundType } from "../models/sounds";
 import dbDisconnect from "./../utils/dbDisconnect";
+import * as config from "../bot.config";
 
 export async function SyncS3() {
+    if (!config.USE_AWS) return;
     await dbConnect();
 
     const s3Files = await getS3Files();

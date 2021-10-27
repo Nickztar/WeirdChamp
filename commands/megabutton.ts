@@ -2,9 +2,11 @@ import { Message } from "discord.js";
 import { Command } from "../types/DiscordTypes";
 import { DiscordButton } from "../src/discord";
 import { QuerySounds } from "../utils/soundUtils";
+import * as config from "../bot.config";
 // This will complain if you don't provide the right types for each property
 const command: Command = {
     name: "megabutton",
+    isDisabled: !config.USE_WEIRDCHAMP,
     description: "Send all sounds as buttons!",
     execute: async (message: Message) => {
         const soundButtons: Array<DiscordButton.MessageButton> = [];
