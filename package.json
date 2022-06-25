@@ -23,7 +23,7 @@
         "express": "^4.17.1",
         "glob": "^7.2.0",
         "mongoose": "^5.13.12",
-        "node-fetch": "^2.6.5",
+        "node-fetch": "^2.6.7",
         "nodemon": "^2.0.14",
         "opusscript": "0.0.7",
         "yt-search": "^1.1.2",
